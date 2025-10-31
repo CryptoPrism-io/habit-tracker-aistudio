@@ -1,455 +1,924 @@
-import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
-import type { Habit } from './types';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
+import { NavLink, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import type { Habit, DailyLog, HabitDraft, DailyRecord } from './types';
+import {
+  HABIT_CATEGORIES,
+  HABIT_DURATION_OPTIONS,
+  HABIT_ICON_KEYS,
+  HABIT_POINT_OPTIONS,
+  HABIT_STREAK_MULTIPLIERS,
+  HABIT_TAG_SUGGESTIONS,
+} from './types';
 import { useDisciplineForge } from './hooks/useDisciplineForge';
 import { useTheme } from './hooks/useTheme';
+import HabitHistoryChart from './components/HabitHistoryChart';
 import { getISODateString } from './utils/date';
 
-const HabitHistoryChart = lazy(() => import('./components/HabitHistoryChart'));
-
-// --- Icon Components ---
-
-const LevelIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" {...props}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 11l7-7 7 7M5 19l7-7 7 7" /></svg>
-);
-const PointsIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" {...props}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>
-);
-const StreakIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" {...props}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.657 7.343A8 8 0 0117.657 18.657z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z" /></svg>
-);
-const CheckIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" {...props}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-);
-const SunIcon = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} {...props}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-    </svg>
-);
-const MoonIcon = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} {...props}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-    </svg>
-);
-const GoalIcon = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} {...props}>
-        <circle cx="12" cy="12" r="10" />
-        <circle cx="12" cy="12" r="3" fill="currentColor"/>
-    </svg>
-);
-const PencilIcon = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} {...props}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L15.232 5.232z" />
-    </svg>
-);
-const InstallIcon = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" {...props}>
-        <path d="M12 3a1 1 0 011 1v8.586l2.293-2.293a1 1 0 011.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L11 12.586V4a1 1 0 011-1z" />
-        <path d="M5 15a1 1 0 011 1v2a1 1 0 001 1h10a1 1 0 001-1v-2a1 1 0 112 0v2a3 3 0 01-3 3H7a3 3 0 01-3-3v-2a1 1 0 011-1z" />
-    </svg>
-);
-
-type BeforeInstallPromptEvent = Event & {
-    prompt: () => Promise<void>;
-    userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform?: string }>;
-};
-
 const ACCESS_CODE = '1111';
+const ACCESS_STORAGE_KEY = 'discipline-forge-access-granted';
 
-
-// --- UI Components ---
-
-interface ThemeToggleProps {
-    theme: string;
-    toggleTheme: () => void;
-}
-const ThemeToggle: React.FC<ThemeToggleProps> = ({ theme, toggleTheme }) => (
-    <button
-        onClick={toggleTheme}
-        className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 dark:focus:ring-offset-gray-800 focus:ring-cyan-500 transition-colors"
-        aria-label="Toggle theme"
-    >
-        {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
-    </button>
-);
-
-
-interface InstallButtonProps {
-    available: boolean;
-    onInstall: () => void;
-}
-const InstallPWAButton: React.FC<InstallButtonProps> = ({ available, onInstall }) => (
-    <button
-        onClick={available ? onInstall : undefined}
-        className={`p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 dark:focus:ring-offset-gray-800 focus:ring-cyan-500 transition-colors flex items-center ${available ? 'text-gray-500 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700' : 'text-gray-400 dark:text-gray-600 cursor-not-allowed'}`}
-        aria-label="Install app"
-        aria-disabled={!available}
-        title={available ? 'Install this app locally' : 'Install becomes available after running a production build (npm run build && npm run preview) or hosting over HTTPS.'}
-    >
-        <InstallIcon />
-        <span className="ml-2 text-sm font-medium hidden md:inline">Install App</span>
-    </button>
-);
-
-
-interface PasswordScreenProps {
-    password: string;
-    onPasswordChange: (value: string) => void;
-    onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
-    toggleTheme: () => void;
-    theme: string;
-    hasError: boolean;
-}
-const PasswordScreen: React.FC<PasswordScreenProps> = ({ password, onPasswordChange, onSubmit, toggleTheme, theme, hasError }) => (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white transition-colors duration-300 flex items-center justify-center p-4">
-        <div className="absolute top-4 right-4">
-            <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
-        </div>
-        <form
-            onSubmit={onSubmit}
-            className="w-full max-w-sm bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border border-gray-200 dark:border-gray-700 rounded-xl p-6 shadow-xl space-y-4"
-        >
-            <div className="text-center space-y-1">
-                <h1 className="text-2xl font-bold font-orbitron text-cyan-400">Discipline Forge</h1>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Enter access code to unlock</p>
-            </div>
-            <div>
-                <label htmlFor="access-code" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Access Code
-                </label>
-                <input
-                    id="access-code"
-                    type="password"
-                    value={password}
-                    onChange={(event) => onPasswordChange(event.target.value)}
-                    className="w-full px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                    placeholder="••••"
-                    autoFocus
-                />
-                {hasError && (
-                    <p className="mt-2 text-sm text-red-500">Incorrect code. Try again.</p>
-                )}
-            </div>
-            <button
-                type="submit"
-                className="w-full py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-gray-900 font-semibold transition-colors"
-            >
-                Unlock
-            </button>
-            <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
-                Data is stored locally on this device.
-            </p>
-        </form>
-    </div>
-);
-
-
-interface StatCardProps {
-  icon: React.ElementType;
-  label: string;
-  value: string | number;
-  color: string;
-  className?: string;
-}
-const StatCard: React.FC<StatCardProps> = ({ icon: Icon, label, value, color, className }) => (
-    <div className={`bg-white dark:bg-gray-800/50 backdrop-blur-sm p-4 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center space-x-4 transition-all duration-300 hover:border-${color}-400/50 hover:shadow-[0_0_15px_rgba(0,255,255,0.2)] ${className || ''}`}>
-        <div className={`p-3 rounded-md bg-${color}-500/10 text-${color}-400`}>
-            <Icon />
-        </div>
-        <div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">{label}</p>
-            <p className="text-2xl font-bold font-orbitron text-gray-900 dark:text-white">{value}</p>
-        </div>
-    </div>
-);
-
-
-interface LevelProgressProps {
-  level: number;
-  currentPoints: number;
-  totalPointsForNextLevel: number;
-}
-const LevelProgress: React.FC<LevelProgressProps> = ({ level, currentPoints, totalPointsForNextLevel }) => {
-    const progress = totalPointsForNextLevel > 0 ? (currentPoints / totalPointsForNextLevel) * 100 : 0;
-    return (
-        <div className="bg-white dark:bg-gray-800/50 backdrop-blur-sm p-4 rounded-lg border border-gray-200 dark:border-gray-700 col-span-2 lg:col-span-4 transition-all duration-300 hover:border-cyan-400/50 hover:shadow-[0_0_15px_rgba(0,255,255,0.2)]">
-            <div className="flex justify-between items-center mb-2">
-                <span className="font-orbitron text-lg text-cyan-400">Level {level}</span>
-                <span className="text-sm text-gray-500 dark:text-gray-400">{currentPoints} / {totalPointsForNextLevel} XP</span>
-            </div>
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4 overflow-hidden">
-                <div 
-                    className="bg-gradient-to-r from-cyan-500 to-blue-500 h-4 rounded-full transition-all duration-500 ease-out" 
-                    style={{ width: `${progress}%` }}
-                ></div>
-            </div>
-        </div>
-    );
+const ICON_BADGE_LABELS: Record<(typeof HABIT_ICON_KEYS)[number], string> = {
+  sunrise: 'SUN',
+  lotus: 'ZEN',
+  torch: 'FIRE',
+  moon: 'MOON',
+  book: 'READ',
+  dumbbell: 'GYM',
 };
 
-interface HabitItemProps {
-  habit: Habit;
-  isCompleted: boolean;
-  onToggle: (id: string) => void;
-}
-const HabitItem: React.FC<HabitItemProps> = ({ habit, isCompleted, onToggle }) => (
-    <div className={`flex items-center p-4 rounded-lg transition-all duration-300 ${isCompleted ? 'bg-green-500/10' : 'bg-gray-100 dark:bg-gray-800/80'}`}>
-        <div className={`mr-4 ${isCompleted ? 'text-green-400' : 'text-cyan-400'}`}>
-           {/* Render the habit icon component via a capitalized local variable to ensure JSX treats it as a component */}
-           {(() => {
-               const Icon = (habit as any).icon as React.ElementType;
-               return Icon ? <Icon /> : null;
-           })()}
-        </div>
-        <div className="flex-grow">
-            <p className={`font-medium text-lg ${isCompleted ? 'line-through text-gray-500' : 'text-gray-900 dark:text-white'}`}>{habit.name}</p>
-            <p className={`text-sm ${isCompleted ? 'text-gray-600' : 'text-gray-500 dark:text-gray-400'}`}>+ {habit.points} XP</p>
-        </div>
-        <button 
-            onClick={() => onToggle(habit.id)}
-            className={`w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${isCompleted ? 'bg-green-500 border-green-400 text-white' : 'border-gray-300 dark:border-gray-600 hover:border-cyan-500 text-gray-400 dark:text-gray-600 hover:text-cyan-500'}`}
-            aria-label={`Mark ${habit.name} as ${isCompleted ? 'incomplete' : 'complete'}`}
-        >
-            <CheckIcon />
-        </button>
-    </div>
+const ICON_OPTION_LABELS: Record<(typeof HABIT_ICON_KEYS)[number], string> = {
+  sunrise: 'Sunrise Ritual',
+  lotus: 'Sadhana',
+  torch: 'Evening Torch',
+  moon: 'Moonlight',
+  book: 'Learning Sprint',
+  dumbbell: 'Strength Stack',
+};
+
+const CATEGORY_LABELS: Record<(typeof HABIT_CATEGORIES)[number], string> = {
+  sadhana: 'Sadhana',
+  wake_morning: 'Wake & Morning',
+  evening: 'Evening Routine',
+  bedtime: 'Bed Routine',
+  learning: 'Learning',
+  reflection: 'Reflection',
+  workout_supplements: 'Workout & Supplements',
+};
+
+const formatCategory = (category: string) =>
+  CATEGORY_LABELS[category as (typeof HABIT_CATEGORIES)[number]] ??
+  category
+    .split('_')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+
+type ForgeStats = ReturnType<typeof useDisciplineForge>['stats'];
+
+const HabitIconBadge: React.FC<{ habit: Habit }> = ({ habit }) => {
+  const glyph = habit.iconKey ? ICON_BADGE_LABELS[habit.iconKey] : undefined;
+  return (
+    <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-500/10 text-xs font-semibold tracking-wide text-cyan-600 dark:text-cyan-300">
+      {glyph ?? 'XP'}
+    </span>
+  );
+};
+
+const StatCard: React.FC<{ label: string; value: string; subLabel?: string }> = ({ label, value, subLabel }) => (
+  <div className="rounded-xl border border-slate-200/70 bg-white/70 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
+    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{label}</p>
+    <p className="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">{value}</p>
+    {subLabel ? <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">{subLabel}</p> : null}
+  </div>
 );
 
+const ThemeToggleButton: React.FC<{ theme: string; onToggle: () => void }> = ({ theme, onToggle }) => (
+  <button
+    type="button"
+    onClick={onToggle}
+    className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-xs font-semibold text-slate-600 transition hover:border-cyan-400 hover:text-cyan-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-cyan-500 dark:hover:text-cyan-300"
+    aria-label="Toggle theme"
+  >
+    {theme === 'dark' ? 'LIGHT' : 'DARK'}
+  </button>
+);
 
-// --- Main App Component ---
+const AccessGate: React.FC<{ onSubmit: (code: string) => boolean }> = ({ onSubmit }) => {
+  const [code, setCode] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
-export default function App() {
-    const { habits, logs, stats, toggleHabit } = useDisciplineForge();
-    const [theme, toggleTheme] = useTheme();
-    const [isUnlocked, setIsUnlocked] = useState<boolean>(false);
-    const [passwordValue, setPasswordValue] = useState('');
-    const [authError, setAuthError] = useState(false);
-    const [installPromptEvent, setInstallPromptEvent] = useState<BeforeInstallPromptEvent | null>(null);
-    const [animateStreak, setAnimateStreak] = useState(false);
-    const prevStreakRef = useRef(stats.streak);
-    const today = getISODateString(new Date());
-    const todayLog = logs.find(log => log.date === today);
-  
-    const [streakGoal, setStreakGoal] = useState<number>(() => {
-        const savedGoal = typeof window !== 'undefined' ? localStorage.getItem('streakGoal') : null;
-        return savedGoal ? parseInt(savedGoal, 10) : 30;
-    });
-    const [isEditingGoal, setIsEditingGoal] = useState(false);
-    const [tempGoal, setTempGoal] = useState<string>(streakGoal.toString());
-
-    const handlePasswordChange = useCallback((value: string) => {
-        setPasswordValue(value);
-        if (authError) {
-            setAuthError(false);
-        }
-    }, [authError]);
-
-    const handlePasswordSubmit = useCallback((event: React.FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-        if (passwordValue.trim() === ACCESS_CODE) {
-            setIsUnlocked(true);
-            setAuthError(false);
-            setPasswordValue('');
-        } else {
-            setAuthError(true);
-        }
-    }, [passwordValue]);
-
-    const handleInstallClick = useCallback(async () => {
-        if (!installPromptEvent) {
-            return;
-        }
-        try {
-            installPromptEvent.prompt();
-            const choiceResult = await installPromptEvent.userChoice;
-            if (choiceResult.outcome === 'accepted') {
-                setInstallPromptEvent(null);
-            }
-        } catch {
-            /* swallow install errors */
-        }
-    }, [installPromptEvent]);
-
-    useEffect(() => {
-        if (typeof window === 'undefined') {
-            return;
-        }
-        const handleBeforeInstallPrompt = (event: Event) => {
-            event.preventDefault();
-            setInstallPromptEvent(event as BeforeInstallPromptEvent);
-        };
-        window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt as EventListener);
-        return () => {
-            window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt as EventListener);
-        };
-    }, []);
-
-    useEffect(() => {
-        if (typeof window === 'undefined') {
-            return;
-        }
-        const handleInstalled = () => setInstallPromptEvent(null);
-        window.addEventListener('appinstalled', handleInstalled);
-        return () => {
-            window.removeEventListener('appinstalled', handleInstalled);
-        };
-    }, []);
-
-    useEffect(() => {
-        let timer: ReturnType<typeof setTimeout> | undefined;
-        if (stats.streak > prevStreakRef.current) {
-            setAnimateStreak(true);
-            timer = setTimeout(() => setAnimateStreak(false), 600); // Animation duration
-        }
-        prevStreakRef.current = stats.streak;
-        return () => {
-            if (timer) {
-                clearTimeout(timer);
-            }
-        };
-    }, [stats.streak]);
-
-  useEffect(() => {
-    localStorage.setItem('streakGoal', streakGoal.toString());
-  }, [streakGoal]);
-
-  const handleGoalSave = () => {
-    const newGoal = parseInt(tempGoal, 10);
-    if (!isNaN(newGoal) && newGoal > 0) {
-      setStreakGoal(newGoal);
-    } else {
-      setTempGoal(streakGoal.toString()); // reset if invalid
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const cleaned = code.trim();
+    if (!cleaned) {
+      setError('Enter the access code to continue.');
+      return;
     }
-    setIsEditingGoal(false);
+    const success = onSubmit(cleaned);
+    if (!success) {
+      setError('That code is incorrect - check your Phase 2 brief.');
+    }
   };
 
-  if (!isUnlocked) {
-    return (
-        <PasswordScreen
-            password={passwordValue}
-            onPasswordChange={handlePasswordChange}
-            onSubmit={handlePasswordSubmit}
-            toggleTheme={toggleTheme}
-            theme={theme}
-            hasError={authError}
-        />
-    );
-  }
+  return (
+    <div className="grid min-h-screen place-items-center bg-slate-950 text-slate-100">
+      <form onSubmit={handleSubmit} className="w-full max-w-md space-y-4 rounded-2xl border border-slate-800 bg-slate-900/60 p-8 shadow-xl">
+        <div>
+          <h1 className="text-2xl font-semibold">Discipline Forge</h1>
+          <p className="mt-2 text-sm text-slate-400">Phase 2 portal locked. Provide your access code to continue calibration.</p>
+        </div>
+        <label className="flex flex-col gap-2 text-sm">
+          <span className="font-medium text-slate-300">Access Code</span>
+          <input
+            type="password"
+            value={code}
+            onChange={(event) => {
+              setCode(event.target.value);
+              setError(null);
+            }}
+            className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-base tracking-widest"
+            placeholder="****"
+            autoFocus
+          />
+        </label>
+        {error ? <p className="text-sm text-rose-400">{error}</p> : null}
+        <button type="submit" className="w-full rounded-lg bg-cyan-500 py-2 text-sm font-semibold text-white hover:bg-cyan-600">
+          Unlock Phase 2
+        </button>
+      </form>
+    </div>
+  );
+};
+
+interface AnalyticsPageProps {
+  stats: ForgeStats;
+  logs: DailyLog[];
+  history: Record<string, DailyRecord>;
+  habits: Habit[];
+}
+
+const AnalyticsPage: React.FC<AnalyticsPageProps> = ({ stats, logs, history, habits }) => {
+  const totalCompletions = useMemo(
+    () => logs.reduce((sum, log) => sum + log.completedHabitIds.length, 0),
+    [logs]
+  );
+
+  const bestDay = useMemo(() => {
+    let record: { date: string; completions: number } | null = null;
+    Object.values(history).forEach((entry) => {
+      const count = entry.entries.length;
+      if (!record || count > record.completions) {
+        record = { date: entry.date, completions: count };
+      }
+    });
+    return record;
+  }, [history]);
+
+  const habitLookup = useMemo(() => {
+    const map = new Map<string, Habit>();
+    habits.forEach((habit) => {
+      map.set(habit.id, habit);
+    });
+    return map;
+  }, [habits]);
+
+  const habitBreakdown = useMemo(() => {
+    const counts = new Map<string, number>();
+    logs.forEach((log) => {
+      log.completedHabitIds.forEach((habitId) => {
+        counts.set(habitId, (counts.get(habitId) ?? 0) + 1);
+      });
+    });
+    return [...counts.entries()]
+      .map(([habitId, count]) => {
+        const habit = habitLookup.get(habitId);
+        return {
+          habitId,
+          name: habit?.name ?? habitId,
+          count,
+        };
+      })
+      .sort((a, b) => b.count - a.count);
+  }, [logs, habitLookup]);
 
   return (
-    <div className="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white min-h-screen p-4 sm:p-6 lg:p-8 transition-colors duration-300 dark:[background:radial-gradient(circle,_#1a202c,_#111827)]">
-      <div className="max-w-4xl mx-auto">
-        
-        <header className="text-center mb-8 relative">
-            <h1 className="text-4xl md:text-5xl font-bold font-orbitron tracking-wider text-cyan-400" style={{ textShadow: '0 0 10px rgba(0, 255, 255, 0.7)'}}>
-                The Discipline Forge
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-2">Harness your will. Forge your destiny.</p>
-              <div className="absolute top-0 right-0 flex items-center space-x-2 text-right">
-                  {!installPromptEvent && (
-                      <span className="hidden md:inline text-xs text-gray-400 dark:text-gray-500 pr-2">
-                          Run `npm run build && npm run preview` (or host via HTTPS) to enable install.
-                      </span>
-                  )}
-                  <InstallPWAButton available={Boolean(installPromptEvent)} onInstall={handleInstallClick} />
-                  <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
-              </div>
-          </header>
+    <div className="space-y-8">
+      <section>
+        <h2 className="text-lg font-semibold text-slate-700 dark:text-slate-200">Guild Metrics</h2>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard label="Current Level" value={`Lv ${stats.level}`} />
+          <StatCard label="Lifetime XP" value={`${stats.totalPoints.toLocaleString()} pts`} />
+          <StatCard label="Active Streak" value={`${stats.streak} days`} />
+          <StatCard label="Total Completions" value={totalCompletions.toString()} />
+        </div>
+      </section>
 
-        <main>
-          <section id="dashboard" className="mb-8">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard icon={LevelIcon} label="Current Level" value={stats.level} color="cyan" />
-                <StatCard icon={PointsIcon} label="Total Points" value={stats.totalPoints.toLocaleString()} color="blue" />
-                <StatCard 
-                    icon={StreakIcon} 
-                    label="Current Streak" 
-                    value={`${stats.streak} Days`} 
-                    color="green" 
-                    className={animateStreak ? 'streak-pop-animation' : ''}
-                />
-                
-                {/* Streak Goal Card */}
-                <div className="bg-white dark:bg-gray-800/50 backdrop-blur-sm p-4 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-between space-x-4 transition-all duration-300 hover:border-yellow-400/50 hover:shadow-[0_0_15px_rgba(250,204,21,0.2)]">
-                    <div className="flex items-center space-x-4 flex-grow min-w-0">
-                        <div className="p-3 rounded-md bg-yellow-500/10 text-yellow-400">
-                            <GoalIcon />
-                        </div>
-                        <div className="flex-grow min-w-0">
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Streak Goal</p>
-                            {isEditingGoal ? (
-                                <input
-                                    type="number"
-                                    value={tempGoal}
-                                    onChange={(e) => setTempGoal(e.target.value)}
-                                    onBlur={handleGoalSave}
-                                    onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
-                                    className="bg-transparent text-2xl font-bold font-orbitron text-gray-900 dark:text-white w-full focus:outline-none p-0 border-0 ring-0"
-                                    autoFocus
-                                    onFocus={(e) => e.target.select()}
-                                />
-                            ) : (
-                                <p className="text-2xl font-bold font-orbitron text-gray-900 dark:text-white truncate">{streakGoal} Days</p>
-                            )}
-                        </div>
-                    </div>
-                    {!isEditingGoal && (
-                        <button 
-                            onClick={() => {
-                                setTempGoal(streakGoal.toString());
-                                setIsEditingGoal(true);
-                            }} 
-                            className="p-1 flex-shrink-0 rounded-full text-gray-400 hover:text-yellow-500 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                            aria-label="Edit streak goal"
+      <section className="grid gap-6 lg:grid-cols-[2fr,1fr]">
+        <div className="rounded-xl border border-slate-200/70 bg-white/70 p-4 dark:border-slate-800 dark:bg-slate-900/60">
+          <h3 className="text-base font-semibold text-slate-700 dark:text-slate-200">Completion Trend</h3>
+          <div className="mt-4 h-72">
+            <HabitHistoryChart data={stats.chartData} />
+          </div>
+        </div>
+        <div className="rounded-xl border border-slate-200/70 bg-white/70 p-4 dark:border-slate-800 dark:bg-slate-900/60">
+          <h3 className="text-base font-semibold text-slate-700 dark:text-slate-200">Highlights</h3>
+          <ul className="mt-4 space-y-3 text-sm text-slate-600 dark:text-slate-300">
+            <li>
+              <span className="font-semibold">Top Habit:</span>{' '}
+              {habitBreakdown[0] ? `${habitBreakdown[0].name} - ${habitBreakdown[0].count} completions` : 'No completions yet'}
+            </li>
+            <li>
+              <span className="font-semibold">Peak Day:</span>{' '}
+              {bestDay ? `${bestDay.date} - ${bestDay.completions} habits completed` : 'No history on record'}
+            </li>
+            <li>
+              <span className="font-semibold">Current Bonus:</span> {Math.round((stats.streakBonusMultiplier - 1) * 100)}%
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section>
+        <h3 className="text-base font-semibold text-slate-700 dark:text-slate-200">Habit Breakdown</h3>
+        <div className="mt-4 overflow-hidden rounded-xl border border-slate-200/70 bg-white/70 dark:border-slate-800 dark:bg-slate-900/60">
+          <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
+            <thead className="bg-slate-100/70 dark:bg-slate-800/60">
+              <tr>
+                <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Habit</th>
+                <th className="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Completions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+              {habitBreakdown.map((entry) => (
+                <tr key={entry.habitId}>
+                  <td className="px-4 py-2 text-sm text-slate-700 dark:text-slate-200">{entry.name}</td>
+                  <td className="px-4 py-2 text-right text-sm font-semibold text-slate-700 dark:text-slate-200">{entry.count}</td>
+                </tr>
+              ))}
+              {habitBreakdown.length === 0 ? (
+                <tr>
+                  <td colSpan={2} className="px-4 py-6 text-center text-sm text-slate-500 dark:text-slate-400">
+                    Complete habits to build analytics history.
+                  </td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  );
+};
+interface HabitManagerPageProps {
+  habits: Habit[];
+  onAddHabit: (draft: HabitDraft) => void;
+  onUpdateHabit: (habitId: string, updates: Partial<HabitDraft>) => void;
+}
+
+const HabitManagerPage: React.FC<HabitManagerPageProps> = ({ habits, onAddHabit, onUpdateHabit }) => {
+  const [formState, setFormState] = useState({
+    name: '',
+    category: HABIT_CATEGORIES[0],
+    points: '25',
+    iconKey: HABIT_ICON_KEYS[0],
+    durationMinutes: '',
+    streakMultiplier: HABIT_STREAK_MULTIPLIERS[0].toString(),
+    description: '',
+    tags: '',
+  });
+  const [error, setError] = useState<string | null>(null);
+  const [editingHabitId, setEditingHabitId] = useState<string | null>(null);
+  const [editingState, setEditingState] = useState({
+    name: '',
+    category: HABIT_CATEGORIES[0],
+    points: '0',
+    iconKey: HABIT_ICON_KEYS[0],
+    durationMinutes: '',
+    streakMultiplier: HABIT_STREAK_MULTIPLIERS[0].toString(),
+    description: '',
+    tags: '',
+  });
+
+  const mergeTagValue = useCallback((current: string, tag: string) => {
+    const existing = current
+      .split(',')
+      .map((entry) => entry.trim())
+      .filter(Boolean);
+    if (!existing.includes(tag)) {
+      existing.push(tag);
+    }
+    return existing.join(', ');
+  }, []);
+
+  const resetForm = () => {
+    setFormState({
+      name: '',
+      category: HABIT_CATEGORIES[0],
+      points: '25',
+      iconKey: HABIT_ICON_KEYS[0],
+      durationMinutes: '',
+      streakMultiplier: HABIT_STREAK_MULTIPLIERS[0].toString(),
+      description: '',
+      tags: '',
+    });
+    setError(null);
+  };
+
+  const handleCreate = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const trimmedName = formState.name.trim();
+    if (!trimmedName) {
+      setError('Give your habit a clear name.');
+      return;
+    }
+    const points = Number.parseInt(formState.points, 10);
+    if (Number.isNaN(points) || !HABIT_POINT_OPTIONS.some((value) => value === points)) {
+      setError('Points must use one of the preset values.');
+      return;
+    }
+    const streakMultiplier = Number.parseInt(formState.streakMultiplier, 10);
+    if (
+      Number.isNaN(streakMultiplier) ||
+      !HABIT_STREAK_MULTIPLIERS.some((value) => value === streakMultiplier)
+    ) {
+      setError('Select a streak multiplier from the list.');
+      return;
+    }
+    const duration = Number.parseInt(formState.durationMinutes, 10);
+    if (
+      formState.durationMinutes &&
+      (Number.isNaN(duration) || !HABIT_DURATION_OPTIONS.some((value) => value === duration))
+    ) {
+      setError('Choose a preset duration or leave it blank.');
+      return;
+    }
+
+    onAddHabit({
+      name: trimmedName,
+      category: formState.category,
+      points,
+      iconKey: formState.iconKey,
+      durationMinutes: Number.isNaN(duration) ? undefined : duration,
+      streakMultiplier,
+      description: formState.description || undefined,
+      tags: formState.tags
+        .split(',')
+        .map((tag) => tag.trim())
+        .filter(Boolean),
+    });
+    resetForm();
+  };
+
+  const beginEdit = (habit: Habit) => {
+    setEditingHabitId(habit.id);
+    setEditingState({
+      name: habit.name,
+      category: habit.category,
+      points: habit.points.toString(),
+      iconKey: (habit.iconKey ?? HABIT_ICON_KEYS[0]) as string,
+      durationMinutes: habit.durationMinutes
+        ? habit.durationMinutes.toString()
+        : '',
+      streakMultiplier: habit.streakMultiplier
+        ? habit.streakMultiplier.toString()
+        : HABIT_STREAK_MULTIPLIERS[0].toString(),
+      description: habit.description ?? '',
+      tags: habit.tags?.join(', ') ?? '',
+    });
+  };
+
+  const handleEditSave = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!editingHabitId) {
+      return;
+    }
+    const trimmedName = editingState.name.trim();
+    if (!trimmedName) {
+      return;
+    }
+    const points = Number.parseInt(editingState.points, 10);
+    if (Number.isNaN(points) || !HABIT_POINT_OPTIONS.some((value) => value === points)) {
+      return;
+    }
+    const streakMultiplier = Number.parseInt(editingState.streakMultiplier, 10);
+    if (
+      Number.isNaN(streakMultiplier) ||
+      !HABIT_STREAK_MULTIPLIERS.some((value) => value === streakMultiplier)
+    ) {
+      return;
+    }
+    const duration = Number.parseInt(editingState.durationMinutes, 10);
+    if (
+      editingState.durationMinutes &&
+      (Number.isNaN(duration) || !HABIT_DURATION_OPTIONS.some((value) => value === duration))
+    ) {
+      return;
+    }
+    onUpdateHabit(editingHabitId, {
+      name: trimmedName,
+      category: editingState.category,
+      points,
+      iconKey: editingState.iconKey,
+      durationMinutes: Number.isNaN(duration) ? undefined : duration,
+      streakMultiplier,
+      description: editingState.description || undefined,
+      tags: editingState.tags
+        .split(',')
+        .map((tag) => tag.trim())
+        .filter(Boolean),
+    });
+    setEditingHabitId(null);
+  };
+
+  return (
+    <div className="space-y-10">
+      <section>
+        <h2 className="text-lg font-semibold text-slate-700 dark:text-slate-200">Create a New Habit</h2>
+        <form onSubmit={handleCreate} className="mt-4 grid gap-4 rounded-xl border border-slate-200/70 bg-white/70 p-6 dark:border-slate-800 dark:bg-slate-900/60 sm:grid-cols-2">
+          <label className="flex flex-col gap-2 text-sm">
+            <span className="font-medium text-slate-600 dark:text-slate-400">Name</span>
+            <input
+              type="text"
+              value={formState.name}
+              onChange={(event) => setFormState((prev) => ({ ...prev, name: event.target.value }))}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
+              placeholder="Morning mobility"
+            />
+          </label>
+
+          <label className="flex flex-col gap-2 text-sm">
+            <span className="font-medium text-slate-600 dark:text-slate-400">Category</span>
+            <select
+              value={formState.category}
+              onChange={(event) => setFormState((prev) => ({ ...prev, category: event.target.value }))}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
+            >
+              {HABIT_CATEGORIES.map((category) => (
+                <option key={category} value={category}>
+                  {formatCategory(category)}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="flex flex-col gap-2 text-sm">
+            <span className="font-medium text-slate-600 dark:text-slate-400">Points</span>
+            <select
+              value={formState.points}
+              onChange={(event) => setFormState((prev) => ({ ...prev, points: event.target.value }))}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
+            >
+              {HABIT_POINT_OPTIONS.map((option) => (
+                <option key={option} value={option.toString()}>
+                  {option} pts
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="flex flex-col gap-2 text-sm">
+            <span className="font-medium text-slate-600 dark:text-slate-400">Icon</span>
+            <select
+              value={formState.iconKey}
+              onChange={(event) => setFormState((prev) => ({ ...prev, iconKey: event.target.value }))}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
+            >
+              {HABIT_ICON_KEYS.map((key) => (
+                <option key={key} value={key}>
+                  {ICON_OPTION_LABELS[key]}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="flex flex-col gap-2 text-sm">
+            <span className="font-medium text-slate-600 dark:text-slate-400">Duration</span>
+            <select
+              value={formState.durationMinutes}
+              onChange={(event) =>
+                setFormState((prev) => ({ ...prev, durationMinutes: event.target.value }))
+              }
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
+            >
+              <option value="">Not timed</option>
+              {HABIT_DURATION_OPTIONS.map((option) => (
+                <option key={option} value={option.toString()}>
+                  {option} minutes
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="flex flex-col gap-2 text-sm">
+            <span className="font-medium text-slate-600 dark:text-slate-400">Streak Multiplier</span>
+            <select
+              value={formState.streakMultiplier}
+              onChange={(event) =>
+                setFormState((prev) => ({ ...prev, streakMultiplier: event.target.value }))
+              }
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
+            >
+              {HABIT_STREAK_MULTIPLIERS.map((option) => (
+                <option key={option} value={option.toString()}>
+                  {option}x
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="sm:col-span-2 flex flex-col gap-2 text-sm">
+            <span className="font-medium text-slate-600 dark:text-slate-400">Description</span>
+            <textarea
+              value={formState.description}
+              onChange={(event) => setFormState((prev) => ({ ...prev, description: event.target.value }))}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
+              rows={3}
+              placeholder="Outline what success looks like."
+            />
+          </label>
+
+          <label className="sm:col-span-2 flex flex-col gap-2 text-sm">
+            <span className="font-medium text-slate-600 dark:text-slate-400">Tags (comma separated)</span>
+            <input
+              type="text"
+              value={formState.tags}
+              onChange={(event) => setFormState((prev) => ({ ...prev, tags: event.target.value }))}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
+              placeholder="movement, focus"
+            />
+            <div className="flex flex-wrap gap-2 pt-1 text-xs">
+              {HABIT_TAG_SUGGESTIONS.map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() =>
+                    setFormState((prev) => ({ ...prev, tags: mergeTagValue(prev.tags, tag) }))
+                  }
+                  className="rounded-full border border-slate-200 px-2 py-1 font-medium text-slate-500 transition hover:border-cyan-400 hover:text-cyan-600 dark:border-slate-700 dark:text-slate-400 dark:hover:border-cyan-500 dark:hover:text-cyan-300"
+                >
+                  #{tag}
+                </button>
+              ))}
+            </div>
+          </label>
+
+          {error ? <p className="sm:col-span-2 text-sm text-rose-500">{error}</p> : null}
+
+          <div className="sm:col-span-2 flex justify-end gap-3">
+            <button type="button" onClick={resetForm} className="rounded-lg bg-transparent px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
+              Reset
+            </button>
+            <button type="submit" className="rounded-lg bg-cyan-500 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-600">
+              Add Habit
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <section>
+        <h2 className="text-lg font-semibold text-slate-700 dark:text-slate-200">Active Habits</h2>
+        <div className="mt-4 space-y-4">
+          {habits.map((habit) => (
+            <div key={habit.id} className="rounded-xl border border-slate-200/70 bg-white/70 p-4 dark:border-slate-800 dark:bg-slate-900/60">
+              {editingHabitId === habit.id ? (
+                <form onSubmit={handleEditSave} className="grid gap-4 sm:grid-cols-2">
+                  <label className="flex flex-col gap-1 text-sm">
+                    <span className="font-medium text-slate-600 dark:text-slate-400">Name</span>
+                    <input
+                      type="text"
+                      value={editingState.name}
+                      onChange={(event) => setEditingState((prev) => ({ ...prev, name: event.target.value }))}
+                      className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
+                    />
+                  </label>
+
+                  <label className="flex flex-col gap-1 text-sm">
+                    <span className="font-medium text-slate-600 dark:text-slate-400">Category</span>
+                    <select
+                      value={editingState.category}
+                      onChange={(event) => setEditingState((prev) => ({ ...prev, category: event.target.value }))}
+                      className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
+                    >
+                      {HABIT_CATEGORIES.map((category) => (
+                        <option key={category} value={category}>
+                          {formatCategory(category)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="flex flex-col gap-1 text-sm">
+                    <span className="font-medium text-slate-600 dark:text-slate-400">Points</span>
+                    <select
+                      value={editingState.points}
+                      onChange={(event) => setEditingState((prev) => ({ ...prev, points: event.target.value }))}
+                      className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
+                    >
+                      {HABIT_POINT_OPTIONS.map((option) => (
+                        <option key={option} value={option.toString()}>
+                          {option} pts
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="flex flex-col gap-1 text-sm">
+                    <span className="font-medium text-slate-600 dark:text-slate-400">Icon</span>
+                    <select
+                      value={editingState.iconKey}
+                      onChange={(event) => setEditingState((prev) => ({ ...prev, iconKey: event.target.value }))}
+                      className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
+                    >
+                      {HABIT_ICON_KEYS.map((key) => (
+                        <option key={key} value={key}>
+                          {ICON_OPTION_LABELS[key]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="flex flex-col gap-1 text-sm">
+                    <span className="font-medium text-slate-600 dark:text-slate-400">Duration</span>
+                    <select
+                      value={editingState.durationMinutes}
+                      onChange={(event) =>
+                        setEditingState((prev) => ({ ...prev, durationMinutes: event.target.value }))
+                      }
+                      className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
+                    >
+                      <option value="">Not timed</option>
+                      {HABIT_DURATION_OPTIONS.map((option) => (
+                        <option key={option} value={option.toString()}>
+                          {option} minutes
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="flex flex-col gap-1 text-sm">
+                    <span className="font-medium text-slate-600 dark:text-slate-400">Streak Multiplier</span>
+                    <select
+                      value={editingState.streakMultiplier}
+                      onChange={(event) =>
+                        setEditingState((prev) => ({ ...prev, streakMultiplier: event.target.value }))
+                      }
+                      className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
+                    >
+                      {HABIT_STREAK_MULTIPLIERS.map((option) => (
+                        <option key={option} value={option.toString()}>
+                          {option}x
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="sm:col-span-2 flex flex-col gap-1 text-sm">
+                    <span className="font-medium text-slate-600 dark:text-slate-400">Description</span>
+                    <textarea
+                      value={editingState.description}
+                      onChange={(event) => setEditingState((prev) => ({ ...prev, description: event.target.value }))}
+                      rows={3}
+                      className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
+                    />
+                  </label>
+
+                  <label className="sm:col-span-2 flex flex-col gap-1 text-sm">
+                    <span className="font-medium text-slate-600 dark:text-slate-400">Tags</span>
+                    <input
+                      type="text"
+                      value={editingState.tags}
+                      onChange={(event) => setEditingState((prev) => ({ ...prev, tags: event.target.value }))}
+                      className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
+                    />
+                    <div className="flex flex-wrap gap-2 pt-1 text-xs">
+                      {HABIT_TAG_SUGGESTIONS.map((tag) => (
+                        <button
+                          key={tag}
+                          type="button"
+                          onClick={() =>
+                            setEditingState((prev) => ({ ...prev, tags: mergeTagValue(prev.tags, tag) }))
+                          }
+                          className="rounded-full border border-slate-200 px-2 py-1 font-medium text-slate-500 transition hover:border-cyan-400 hover:text-cyan-600 dark:border-slate-700 dark:text-slate-400 dark:hover:border-cyan-500 dark:hover:text-cyan-300"
                         >
-                            <PencilIcon />
+                          #{tag}
                         </button>
-                    )}
-                </div>
-
-                <LevelProgress level={stats.level} currentPoints={stats.pointsForCurrentLevel} totalPointsForNextLevel={stats.pointsToNextLevel} />
-            </div>
-          </section>
-
-          <section id="tracker" className="mb-8">
-            <div className="bg-white/80 dark:bg-black/20 backdrop-blur-md p-6 rounded-xl border border-gray-200 dark:border-gray-800">
-                <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-bold font-orbitron">Today's Forge</h2>
-                    <div className="text-right">
-                        <p className="font-semibold text-lg text-cyan-400">+{stats.todayPoints} XP</p>
-                        {stats.streak > 0 && (
-                            <p className="text-sm text-green-400">{(stats.streakBonusMultiplier - 1).toLocaleString(undefined, {style: 'percent'})} Streak Bonus</p>
-                        )}
+                      ))}
                     </div>
-                </div>
-                <div className="space-y-4">
-                    {habits.map(habit => (
-                        <HabitItem 
-                            key={habit.id}
-                            habit={habit}
-                            isCompleted={todayLog?.completedHabitIds.includes(habit.id) ?? false}
-                            onToggle={() => toggleHabit(habit.id, today)}
-                        />
-                    ))}
-                </div>
-            </div>
-          </section>
+                  </label>
 
-          <section id="history">
-            <div className="bg-white/80 dark:bg-black/20 backdrop-blur-md p-6 rounded-xl border border-gray-200 dark:border-gray-800">
-                <h2 className="text-2xl font-bold font-orbitron mb-4">7-Day Activity</h2>
-                <div style={{ width: '100%', height: 300 }}>
-                    <Suspense fallback={<div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">Loading chart...</div>}>
-                        <HabitHistoryChart data={stats.chartData} />
-                    </Suspense>
+                  <div className="sm:col-span-2 flex justify-end gap-3">
+                    <button type="button" onClick={() => setEditingHabitId(null)} className="rounded-lg bg-transparent px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
+                      Cancel
+                    </button>
+                    <button type="submit" className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600">
+                      Save Changes
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-base font-semibold text-slate-800 dark:text-slate-100">{habit.name}</p>
+                    <div className="mt-1 flex flex-wrap gap-3 text-xs text-slate-500 dark:text-slate-400">
+                      <span className="rounded-full bg-cyan-500/10 px-2 py-1 font-medium text-cyan-600 dark:text-cyan-300">{formatCategory(habit.category)}</span>
+                      <span>{habit.points} pts</span>
+                      {habit.durationMinutes ? <span>{habit.durationMinutes} min</span> : null}
+                      {habit.streakMultiplier ? <span>{habit.streakMultiplier}x</span> : null}
+                    </div>
+                    {habit.description ? <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{habit.description}</p> : null}
+                    {habit.tags?.length ? (
+                      <div className="mt-2 flex flex-wrap gap-2 text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                        {habit.tags.map((tag) => (
+                          <span key={tag} className="rounded border border-slate-200/60 px-2 py-0.5 dark:border-slate-700">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                  <div className="flex shrink-0 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => beginEdit(habit)}
+                      className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:border-cyan-400 hover:text-cyan-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-cyan-500 dark:hover:text-cyan-300"
+                    >
+                      Edit
+                    </button>
+                  </div>
                 </div>
+              )}
             </div>
-          </section>
-        </main>
+          ))}
+          {habits.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-slate-300 p-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
+              No habits yet - create your first ritual above.
+            </div>
+          ) : null}
+        </div>
+      </section>
+    </div>
+  );
+};
 
-        <footer className="text-center mt-12 text-gray-500 text-sm">
-            <p>&copy; {new Date().getFullYear()} Discipline Forge. All rights reserved.</p>
-        </footer>
+interface DashboardPageProps {
+  stats: ForgeStats;
+  habits: Habit[];
+  logs: DailyLog[];
+  onToggleHabit: (habitId: string, date?: string) => void;
+}
+
+const DashboardPage: React.FC<DashboardPageProps> = ({ stats, habits, logs, onToggleHabit }) => {
+  const today = getISODateString(new Date());
+  const todayCompleted = useMemo(() => {
+    const log = logs.find((entry) => entry.date === today);
+    return new Set(log?.completedHabitIds ?? []);
+  }, [logs, today]);
+  const sortedHabits = useMemo(() => [...habits].sort((a, b) => a.name.localeCompare(b.name)), [habits]);
+
+  return (
+    <div className="space-y-8">
+      <section>
+        <h2 className="text-lg font-semibold text-slate-700 dark:text-slate-200">Progress Overview</h2>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard label="Guild Level" value={`Lv ${stats.level}`} subLabel={`${stats.pointsForCurrentLevel}/${stats.pointsToNextLevel} XP`} />
+          <StatCard label="Total XP" value={`${stats.totalPoints.toLocaleString()} pts`} />
+          <StatCard label="Current Streak" value={`${stats.streak} days`} subLabel={`+${Math.round((stats.streakBonusMultiplier - 1) * 100)}% bonus`} />
+          <StatCard label="Today's Forge" value={`${stats.todayPoints} pts`} />
+        </div>
+      </section>
+
+      <section>
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-slate-700 dark:text-slate-200">Today's Habits</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            {todayCompleted.size}/{habits.length} completed
+          </p>
+        </div>
+        <div className="mt-4 space-y-3">
+          {sortedHabits.map((habit) => {
+            const isCompleted = todayCompleted.has(habit.id);
+            return (
+              <div
+                key={habit.id}
+                className="flex items-center justify-between rounded-xl border border-slate-200/70 bg-white/70 p-4 transition hover:border-cyan-400 hover:shadow-md dark:border-slate-800 dark:bg-slate-900/60"
+              >
+                <div className="flex items-center gap-4">
+                  <HabitIconBadge habit={habit} />
+                  <div>
+                    <p className="text-base font-semibold text-slate-800 dark:text-slate-100">{habit.name}</p>
+                    <p className="text-xs uppercase tracking-wide text-cyan-500">{formatCategory(habit.category)}</p>
+                    <div className="mt-1 flex flex-wrap gap-2 text-xs text-slate-500 dark:text-slate-400">
+                      <span>{habit.points} pts</span>
+                      {habit.durationMinutes ? <span>{habit.durationMinutes} min</span> : null}
+                      {habit.streakMultiplier && habit.streakMultiplier !== 1 ? (
+                        <span>{Math.round((habit.streakMultiplier - 1) * 100)}% bonus</span>
+                      ) : null}
+                    </div>
+                    {habit.description ? (
+                      <p className="mt-2 max-w-xl text-sm text-slate-500 dark:text-slate-400">{habit.description}</p>
+                    ) : null}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onToggleHabit(habit.id, today)}
+                  className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                    isCompleted
+                      ? 'bg-emerald-500 text-white hover:bg-emerald-600'
+                      : 'bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  {isCompleted ? 'Completed' : 'Mark Complete'}
+                </button>
+              </div>
+            );
+          })}
+          {sortedHabits.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-slate-300 p-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
+              No active habits yet. Head to the Habit Manager to create your first ritual.
+            </div>
+          ) : null}
+        </div>
+      </section>
+
+      <section>
+        <h2 className="text-lg font-semibold text-slate-700 dark:text-slate-200">Weekly Momentum</h2>
+        <div className="mt-4 h-72 rounded-xl border border-slate-200/70 bg-white/70 p-4 dark:border-slate-800 dark:bg-slate-900/60">
+          <HabitHistoryChart data={stats.chartData} />
+        </div>
+      </section>
+    </div>
+  );
+};
+
+const AppShell: React.FC<{ theme: string; onToggleTheme: () => void; children: React.ReactNode }> = ({
+  theme,
+  onToggleTheme,
+  children,
+}) => {
+  const location = useLocation();
+  const navLinks = [
+    { to: '/dashboard', label: 'Dashboard' },
+    { to: '/habits', label: 'Habit Manager' },
+    { to: '/analytics', label: 'Analytics' },
+  ];
+
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-900 transition dark:bg-slate-950 dark:text-slate-100">
+      <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-10 sm:px-8">
+        <header className="flex flex-col gap-4 rounded-2xl border border-slate-200/70 bg-white/70 p-6 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-slate-900/60 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm uppercase tracking-[0.3em] text-cyan-500">Discipline Forge</p>
+            <h1 className="text-2xl font-bold">Phase 2 Command Deck</h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Monitor progress, refine rituals, and track your momentum.</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <nav className="flex gap-2 rounded-full bg-slate-100/70 p-1 dark:bg-slate-800/60">
+              {navLinks.map((link) => (
+                <NavLink
+                  key={link.to}
+                  to={link.to}
+                  className={({ isActive }) =>
+                    `rounded-full px-4 py-2 text-sm font-medium transition ${
+                      isActive || location.pathname === link.to
+                        ? 'bg-cyan-500 text-white shadow'
+                        : 'text-slate-600 hover:text-cyan-500 dark:text-slate-300 dark:hover:text-cyan-300'
+                    }`
+                  }
+                >
+                  {link.label}
+                </NavLink>
+              ))}
+            </nav>
+            <ThemeToggleButton theme={theme} onToggle={onToggleTheme} />
+          </div>
+        </header>
+        <main className="pb-12">{children}</main>
       </div>
     </div>
   );
-}
+};
+
+const App: React.FC = () => {
+  const { habits, logs, stats, history, toggleHabit, addHabit, updateHabit } = useDisciplineForge();
+  const [theme, toggleTheme] = useTheme();
+  const [hasAccess, setHasAccess] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const stored = window.localStorage.getItem(ACCESS_STORAGE_KEY);
+    if (stored === 'true') {
+      setHasAccess(true);
+    }
+  }, []);
+
+  const handleAccessSubmit = useCallback((code: string) => {
+    const valid = code === ACCESS_CODE;
+    if (valid) {
+      setHasAccess(true);
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(ACCESS_STORAGE_KEY, 'true');
+      }
+    }
+    return valid;
+  }, []);
+
+  if (!hasAccess) {
+    return <AccessGate onSubmit={handleAccessSubmit} />;
+  }
+
+  return (
+    <AppShell theme={theme} onToggleTheme={toggleTheme}>
+      <Routes>
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/dashboard" element={<DashboardPage stats={stats} habits={habits} logs={logs} onToggleHabit={toggleHabit} />} />
+        <Route path="/habits" element={<HabitManagerPage habits={habits} onAddHabit={addHabit} onUpdateHabit={updateHabit} />} />
+        <Route path="/analytics" element={<AnalyticsPage stats={stats} logs={logs} history={history} habits={habits} />} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Routes>
+    </AppShell>
+  );
+};
+
+export default App;
