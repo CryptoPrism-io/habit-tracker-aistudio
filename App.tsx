@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import type { Habit } from './types';
 import { useDisciplineForge } from './hooks/useDisciplineForge';
 import { useTheme } from './hooks/useTheme';
 import { getISODateString } from './utils/date';
-import HabitHistoryChart from './components/HabitHistoryChart';
+
+const HabitHistoryChart = lazy(() => import('./components/HabitHistoryChart'));
 
 // --- Icon Components ---
 
@@ -40,6 +41,19 @@ const PencilIcon = (props: React.SVGProps<SVGSVGElement>) => (
         <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L15.232 5.232z" />
     </svg>
 );
+const InstallIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" {...props}>
+        <path d="M12 3a1 1 0 011 1v8.586l2.293-2.293a1 1 0 011.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L11 12.586V4a1 1 0 011-1z" />
+        <path d="M5 15a1 1 0 011 1v2a1 1 0 001 1h10a1 1 0 001-1v-2a1 1 0 112 0v2a3 3 0 01-3 3H7a3 3 0 01-3-3v-2a1 1 0 011-1z" />
+    </svg>
+);
+
+type BeforeInstallPromptEvent = Event & {
+    prompt: () => Promise<void>;
+    userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform?: string }>;
+};
+
+const ACCESS_CODE = '1111';
 
 
 // --- UI Components ---
@@ -56,6 +70,76 @@ const ThemeToggle: React.FC<ThemeToggleProps> = ({ theme, toggleTheme }) => (
     >
         {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
     </button>
+);
+
+
+interface InstallButtonProps {
+    available: boolean;
+    onInstall: () => void;
+}
+const InstallPWAButton: React.FC<InstallButtonProps> = ({ available, onInstall }) => (
+    <button
+        onClick={available ? onInstall : undefined}
+        className={`p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 dark:focus:ring-offset-gray-800 focus:ring-cyan-500 transition-colors flex items-center ${available ? 'text-gray-500 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700' : 'text-gray-400 dark:text-gray-600 cursor-not-allowed'}`}
+        aria-label="Install app"
+        aria-disabled={!available}
+        title={available ? 'Install this app locally' : 'Install becomes available after running a production build (npm run build && npm run preview) or hosting over HTTPS.'}
+    >
+        <InstallIcon />
+        <span className="ml-2 text-sm font-medium hidden md:inline">Install App</span>
+    </button>
+);
+
+
+interface PasswordScreenProps {
+    password: string;
+    onPasswordChange: (value: string) => void;
+    onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
+    toggleTheme: () => void;
+    theme: string;
+    hasError: boolean;
+}
+const PasswordScreen: React.FC<PasswordScreenProps> = ({ password, onPasswordChange, onSubmit, toggleTheme, theme, hasError }) => (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white transition-colors duration-300 flex items-center justify-center p-4">
+        <div className="absolute top-4 right-4">
+            <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
+        </div>
+        <form
+            onSubmit={onSubmit}
+            className="w-full max-w-sm bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border border-gray-200 dark:border-gray-700 rounded-xl p-6 shadow-xl space-y-4"
+        >
+            <div className="text-center space-y-1">
+                <h1 className="text-2xl font-bold font-orbitron text-cyan-400">Discipline Forge</h1>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Enter access code to unlock</p>
+            </div>
+            <div>
+                <label htmlFor="access-code" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Access Code
+                </label>
+                <input
+                    id="access-code"
+                    type="password"
+                    value={password}
+                    onChange={(event) => onPasswordChange(event.target.value)}
+                    className="w-full px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                    placeholder="••••"
+                    autoFocus
+                />
+                {hasError && (
+                    <p className="mt-2 text-sm text-red-500">Incorrect code. Try again.</p>
+                )}
+            </div>
+            <button
+                type="submit"
+                className="w-full py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-gray-900 font-semibold transition-colors"
+            >
+                Unlock
+            </button>
+            <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
+                Data is stored locally on this device.
+            </p>
+        </form>
+    </div>
 );
 
 
@@ -110,7 +194,11 @@ interface HabitItemProps {
 const HabitItem: React.FC<HabitItemProps> = ({ habit, isCompleted, onToggle }) => (
     <div className={`flex items-center p-4 rounded-lg transition-all duration-300 ${isCompleted ? 'bg-green-500/10' : 'bg-gray-100 dark:bg-gray-800/80'}`}>
         <div className={`mr-4 ${isCompleted ? 'text-green-400' : 'text-cyan-400'}`}>
-           <habit.icon />
+           {/* Render the habit icon component via a capitalized local variable to ensure JSX treats it as a component */}
+           {(() => {
+               const Icon = (habit as any).icon as React.ElementType;
+               return Icon ? <Icon /> : null;
+           })()}
         </div>
         <div className="flex-grow">
             <p className={`font-medium text-lg ${isCompleted ? 'line-through text-gray-500' : 'text-gray-900 dark:text-white'}`}>{habit.name}</p>
@@ -130,28 +218,95 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, isCompleted, onToggle }) =
 // --- Main App Component ---
 
 export default function App() {
-  const { habits, logs, stats, toggleHabit } = useDisciplineForge();
-  const [theme, toggleTheme] = useTheme();
-  const [animateStreak, setAnimateStreak] = useState(false);
-  const prevStreakRef = useRef(stats.streak);
-  const today = getISODateString(new Date());
-  const todayLog = logs.find(log => log.date === today);
+    const { habits, logs, stats, toggleHabit } = useDisciplineForge();
+    const [theme, toggleTheme] = useTheme();
+    const [isUnlocked, setIsUnlocked] = useState<boolean>(false);
+    const [passwordValue, setPasswordValue] = useState('');
+    const [authError, setAuthError] = useState(false);
+    const [installPromptEvent, setInstallPromptEvent] = useState<BeforeInstallPromptEvent | null>(null);
+    const [animateStreak, setAnimateStreak] = useState(false);
+    const prevStreakRef = useRef(stats.streak);
+    const today = getISODateString(new Date());
+    const todayLog = logs.find(log => log.date === today);
   
-  const [streakGoal, setStreakGoal] = useState<number>(() => {
-    const savedGoal = typeof window !== 'undefined' ? localStorage.getItem('streakGoal') : null;
-    return savedGoal ? parseInt(savedGoal, 10) : 30;
-  });
-  const [isEditingGoal, setIsEditingGoal] = useState(false);
-  const [tempGoal, setTempGoal] = useState<string>(streakGoal.toString());
+    const [streakGoal, setStreakGoal] = useState<number>(() => {
+        const savedGoal = typeof window !== 'undefined' ? localStorage.getItem('streakGoal') : null;
+        return savedGoal ? parseInt(savedGoal, 10) : 30;
+    });
+    const [isEditingGoal, setIsEditingGoal] = useState(false);
+    const [tempGoal, setTempGoal] = useState<string>(streakGoal.toString());
 
-  useEffect(() => {
-    if (stats.streak > prevStreakRef.current) {
-        setAnimateStreak(true);
-        const timer = setTimeout(() => setAnimateStreak(false), 600); // Animation duration
-        return () => clearTimeout(timer);
-    }
-    prevStreakRef.current = stats.streak;
-  }, [stats.streak]);
+    const handlePasswordChange = useCallback((value: string) => {
+        setPasswordValue(value);
+        if (authError) {
+            setAuthError(false);
+        }
+    }, [authError]);
+
+    const handlePasswordSubmit = useCallback((event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        if (passwordValue.trim() === ACCESS_CODE) {
+            setIsUnlocked(true);
+            setAuthError(false);
+            setPasswordValue('');
+        } else {
+            setAuthError(true);
+        }
+    }, [passwordValue]);
+
+    const handleInstallClick = useCallback(async () => {
+        if (!installPromptEvent) {
+            return;
+        }
+        try {
+            installPromptEvent.prompt();
+            const choiceResult = await installPromptEvent.userChoice;
+            if (choiceResult.outcome === 'accepted') {
+                setInstallPromptEvent(null);
+            }
+        } catch {
+            /* swallow install errors */
+        }
+    }, [installPromptEvent]);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') {
+            return;
+        }
+        const handleBeforeInstallPrompt = (event: Event) => {
+            event.preventDefault();
+            setInstallPromptEvent(event as BeforeInstallPromptEvent);
+        };
+        window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt as EventListener);
+        return () => {
+            window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt as EventListener);
+        };
+    }, []);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') {
+            return;
+        }
+        const handleInstalled = () => setInstallPromptEvent(null);
+        window.addEventListener('appinstalled', handleInstalled);
+        return () => {
+            window.removeEventListener('appinstalled', handleInstalled);
+        };
+    }, []);
+
+    useEffect(() => {
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        if (stats.streak > prevStreakRef.current) {
+            setAnimateStreak(true);
+            timer = setTimeout(() => setAnimateStreak(false), 600); // Animation duration
+        }
+        prevStreakRef.current = stats.streak;
+        return () => {
+            if (timer) {
+                clearTimeout(timer);
+            }
+        };
+    }, [stats.streak]);
 
   useEffect(() => {
     localStorage.setItem('streakGoal', streakGoal.toString());
@@ -167,6 +322,19 @@ export default function App() {
     setIsEditingGoal(false);
   };
 
+  if (!isUnlocked) {
+    return (
+        <PasswordScreen
+            password={passwordValue}
+            onPasswordChange={handlePasswordChange}
+            onSubmit={handlePasswordSubmit}
+            toggleTheme={toggleTheme}
+            theme={theme}
+            hasError={authError}
+        />
+    );
+  }
+
   return (
     <div className="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white min-h-screen p-4 sm:p-6 lg:p-8 transition-colors duration-300 dark:[background:radial-gradient(circle,_#1a202c,_#111827)]">
       <div className="max-w-4xl mx-auto">
@@ -176,10 +344,16 @@ export default function App() {
                 The Discipline Forge
             </h1>
             <p className="text-gray-600 dark:text-gray-400 mt-2">Harness your will. Forge your destiny.</p>
-            <div className="absolute top-0 right-0">
-                <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
-            </div>
-        </header>
+              <div className="absolute top-0 right-0 flex items-center space-x-2 text-right">
+                  {!installPromptEvent && (
+                      <span className="hidden md:inline text-xs text-gray-400 dark:text-gray-500 pr-2">
+                          Run `npm run build && npm run preview` (or host via HTTPS) to enable install.
+                      </span>
+                  )}
+                  <InstallPWAButton available={Boolean(installPromptEvent)} onInstall={handleInstallClick} />
+                  <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
+              </div>
+          </header>
 
         <main>
           <section id="dashboard" className="mb-8">
@@ -264,7 +438,9 @@ export default function App() {
             <div className="bg-white/80 dark:bg-black/20 backdrop-blur-md p-6 rounded-xl border border-gray-200 dark:border-gray-800">
                 <h2 className="text-2xl font-bold font-orbitron mb-4">7-Day Activity</h2>
                 <div style={{ width: '100%', height: 300 }}>
-                    <HabitHistoryChart data={stats.chartData} />
+                    <Suspense fallback={<div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">Loading chart...</div>}>
+                        <HabitHistoryChart data={stats.chartData} />
+                    </Suspense>
                 </div>
             </div>
           </section>

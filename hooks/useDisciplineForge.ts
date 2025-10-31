@@ -1,12 +1,41 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import type { Habit, DailyLog } from '../types';
 import { initialHabits, initialLogs } from '../data/mockData';
 import { POINTS_PER_LEVEL, MAX_STREAK_BONUS_DAYS, STREAK_BONUS_PER_DAY } from '../constants';
 import { getISODateString, areDatesConsecutive } from '../utils/date';
 
+const LOG_STORAGE_KEY = 'discipline-forge-logs';
+
 export const useDisciplineForge = () => {
-    const [logs, setLogs] = useState<DailyLog[]>(initialLogs);
+    const [logs, setLogs] = useState<DailyLog[]>(() => {
+        if (typeof window === 'undefined') {
+            return initialLogs;
+        }
+        try {
+            const stored = localStorage.getItem(LOG_STORAGE_KEY);
+            if (stored) {
+                const parsed = JSON.parse(stored) as DailyLog[];
+                if (Array.isArray(parsed)) {
+                    return parsed;
+                }
+            }
+        } catch {
+            /* fall back to defaults */
+        }
+        return initialLogs;
+    });
     const [habits] = useState<Habit[]>(initialHabits);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') {
+            return;
+        }
+        try {
+            localStorage.setItem(LOG_STORAGE_KEY, JSON.stringify(logs));
+        } catch {
+            /* ignore quota/storage errors */
+        }
+    }, [logs]);
 
     const stats = useMemo(() => {
         // --- Streak Calculation ---
