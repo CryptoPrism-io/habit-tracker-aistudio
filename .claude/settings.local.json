@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__ide__getDiagnostics",
+      "Bash(npm install:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm view:*)",
+      "Bash(find:*)",
+      "Bash(nul)",
+      "Bash(dir /s /b src*.tsx src*.ts src*.jsx src*.js 2)",
+      "Bash(dir:*)",
+      "Bash(findstr:*)",
+      "Bash(test:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(gh repo view:*)",
+      "Bash(gh api:*)",
+      "Bash(git push:*)",
+      "Bash(git ls-tree:*)",
+      "Bash(git fetch:*)",
+      "Bash(git subtree:*)",
+      "WebFetch(domain:cryptoprism-io.github.io)",
+      "Bash(git cat-file:*)",
+      "Bash(WebFetch test)",
+      "Bash(gh run list:*)",
+      "Bash(gh run view:*)",
+      "Bash(git checkout:*)",
+      "Bash(git reset:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
