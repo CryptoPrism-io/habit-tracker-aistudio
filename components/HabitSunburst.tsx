@@ -60,8 +60,11 @@ const HabitSunburst: React.FC<HabitSunburstProps> = ({ habits, logs }) => {
       category,
     }));
 
-    // If no real data, use dummy data
-    if (flatData.length === 0) {
+    // Check if we have meaningful data (any completions)
+    const hasMeaningfulData = flatData.some((h) => h.completions > 0);
+
+    // If no real data or no completions, use dummy data
+    if (flatData.length === 0 || !hasMeaningfulData) {
       flatData = DUMMY_HABITS.map((habit) => ({
         name: habit.name,
         value: habit.completions,
