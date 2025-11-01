@@ -67,7 +67,7 @@ const TimeScatterPlot: React.FC<TimeScatterPlotProps> = ({ habits, history }) =>
     <div className="w-full h-96">
       <ResponsiveContainer width="100%" height="100%">
         <ScatterChart
-          margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
+          margin={{ top: 20, right: 20, bottom: 40, left: 20 }}
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#475569" />
           <XAxis
@@ -110,7 +110,7 @@ const TimeScatterPlot: React.FC<TimeScatterPlotProps> = ({ habits, history }) =>
               return null;
             }}
           />
-          <Legend wrapperStyle={{ color: '#94a3b8' }} />
+          <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{ color: '#94a3b8', paddingTop: '20px' }} />
           {Array.from(
             new Set(
               data.map((d) => d.category)

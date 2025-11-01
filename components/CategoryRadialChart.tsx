@@ -114,11 +114,15 @@ const CategoryRadialChart: React.FC<CategoryRadialChartProps> = ({ habits, logs 
             }}
           />
           <Legend
+            layout="horizontal"
+            verticalAlign="bottom"
+            align="center"
             wrapperStyle={{
               paddingTop: '20px',
-              color: '#94a3b8',
+              fontSize: '12px',
             }}
-            formatter={(value) => `${value}%`}
+            iconType="circle"
+            iconSize={8}
           />
         </RadialBarChart>
       </ResponsiveContainer>

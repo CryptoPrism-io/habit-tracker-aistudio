@@ -85,7 +85,7 @@ define(['./workbox-99d8380f'], (function (workbox) { 'use strict';
     "revision": "d41d8cd98f00b204e9800998ecf8427e"
   }, {
     "url": "/habit-tracker-aistudio/index.html",
-    "revision": "0.tr8ppbsjfuo"
+    "revision": "0.turmajrhk6g"
   }], {});
   workbox.cleanupOutdatedCaches();
   workbox.registerRoute(new workbox.NavigationRoute(workbox.createHandlerBoundToURL("/habit-tracker-aistudio/index.html"), {

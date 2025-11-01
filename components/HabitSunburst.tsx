@@ -39,37 +39,18 @@ const HabitSunburst: React.FC<HabitSunburstProps> = ({ habits, logs }) => {
       });
     });
 
-    // Build hierarchical structure
-    const categoryMap = new Map<string, { name: string; children: any[] }>();
+    // Build flat structure for Treemap
+    const flatData = Array.from(habitStats.entries()).map(([, { name, completions, category }]) => ({
+      name,
+      value: Math.max(completions, 1), // Minimum value of 1 for visibility
+      completions,
+      category,
+    }));
 
-    habitStats.forEach(({ name, completions, category }) => {
-      if (!categoryMap.has(category)) {
-        categoryMap.set(category, {
-          name: category.replace(/_/g, ' ').toUpperCase(),
-          children: [],
-        });
-      }
-
-      const categoryData = categoryMap.get(category)!;
-      categoryData.children.push({
-        name,
-        value: Math.max(completions, 1), // Minimum value of 1 for visibility
-        completions,
-      });
-    });
-
-    const root = {
-      name: 'All Habits',
-      children: Array.from(categoryMap.entries()).map(([category, data]) => ({
-        name: data.name,
-        children: data.children,
-      })),
-    };
-
-    return root;
+    return flatData;
   }, [habits, logs]);
 
-  if (!data.children || data.children.length === 0) {
+  if (!data || data.length === 0) {
     return (
       <div className="flex h-96 items-center justify-center rounded-xl border border-slate-200/70 bg-white/70 text-slate-500 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400">
         No habits to display
@@ -132,9 +113,8 @@ const CustomizedContent: React.FC<CustomizedContentProps> = (props) => {
 
   if (!treeData) return null;
 
-  const isCategory = treeData.children && treeData.children.length > 0;
   const categoryColor =
-    CATEGORY_COLORS[treeData.name.toLowerCase().replace(/ /g, '_') as keyof typeof CATEGORY_COLORS] ||
+    CATEGORY_COLORS[treeData.category as keyof typeof CATEGORY_COLORS] ||
     '#64748b';
 
   return (
@@ -145,7 +125,7 @@ const CustomizedContent: React.FC<CustomizedContentProps> = (props) => {
         width={width}
         height={height}
         style={{
-          fill: isCategory ? categoryColor + '20' : categoryColor + '80',
+          fill: categoryColor + '80',
           stroke: categoryColor,
           strokeWidth: 2,
         }}

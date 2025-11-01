@@ -57,8 +57,15 @@ const LevelProgressRing: React.FC<LevelProgressRingProps> = ({
 
         {/* Center content */}
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <div className="text-4xl font-bold text-cyan-600 dark:text-cyan-400">Lv {level}</div>
-          <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">
+          <div className="flex items-baseline gap-1">
+            <span className="text-sm font-semibold text-cyan-600/70 dark:text-cyan-400/70 uppercase tracking-widest">
+              Lv
+            </span>
+            <span className="text-3xl font-bold text-cyan-600 dark:text-cyan-400">
+              {level}
+            </span>
+          </div>
+          <div className="text-sm font-medium text-slate-600 dark:text-slate-300 mt-2">
             {progressPercentage.toFixed(0)}%
           </div>
         </div>
