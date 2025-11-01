@@ -13,7 +13,10 @@
       "Bash(findstr:*)",
       "Bash(test:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(gh repo view:*)",
+      "Bash(gh api:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []

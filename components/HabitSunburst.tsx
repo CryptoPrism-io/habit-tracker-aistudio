@@ -17,6 +17,19 @@ const CATEGORY_COLORS: Record<string, string> = {
   workout_supplements: '#ef4444',
 };
 
+const DUMMY_HABITS = [
+  { name: 'Morning Meditation', completions: 32, category: 'sadhana' },
+  { name: 'Early Wake Up', completions: 28, category: 'wake_morning' },
+  { name: 'Evening Walk', completions: 24, category: 'evening' },
+  { name: 'Sleep Schedule', completions: 35, category: 'bedtime' },
+  { name: 'Reading', completions: 18, category: 'learning' },
+  { name: 'Journaling', completions: 22, category: 'reflection' },
+  { name: 'Gym Session', completions: 15, category: 'workout_supplements' },
+  { name: 'Yoga Practice', completions: 20, category: 'sadhana' },
+  { name: 'Learning Course', completions: 25, category: 'learning' },
+  { name: 'Stretching', completions: 30, category: 'workout_supplements' },
+];
+
 const HabitSunburst: React.FC<HabitSunburstProps> = ({ habits, logs }) => {
   const data = useMemo(() => {
     // Count completions per habit
@@ -40,12 +53,22 @@ const HabitSunburst: React.FC<HabitSunburstProps> = ({ habits, logs }) => {
     });
 
     // Build flat structure for Treemap
-    const flatData = Array.from(habitStats.entries()).map(([, { name, completions, category }]) => ({
+    let flatData = Array.from(habitStats.entries()).map(([, { name, completions, category }]) => ({
       name,
       value: Math.max(completions, 1), // Minimum value of 1 for visibility
       completions,
       category,
     }));
+
+    // If no real data, use dummy data
+    if (flatData.length === 0) {
+      flatData = DUMMY_HABITS.map((habit) => ({
+        name: habit.name,
+        value: habit.completions,
+        completions: habit.completions,
+        category: habit.category,
+      }));
+    }
 
     return flatData;
   }, [habits, logs]);

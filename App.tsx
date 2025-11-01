@@ -18,6 +18,7 @@ import TimeScatterPlot from './components/TimeScatterPlot';
 import StreakTimeline from './components/StreakTimeline';
 import HabitSunburst from './components/HabitSunburst';
 import LevelProgressRing from './components/LevelProgressRing';
+import CollapsibleCard from './components/CollapsibleCard';
 import { getISODateString, formatTimeOfDay } from './utils/date';
 
 const ACCESS_CODE = '1111';
@@ -199,15 +200,13 @@ const AnalyticsPage: React.FC<AnalyticsPageProps> = ({ stats, logs, history, hab
       </section>
 
       <section className="grid gap-6 lg:grid-cols-[2fr,1fr]">
-        <div className="rounded-xl border border-slate-300 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/60">
-          <h3 className="text-base font-semibold text-slate-700 dark:text-slate-200">Completion Trend</h3>
-          <div className="mt-4 h-72">
+        <CollapsibleCard title="Completion Trend">
+          <div className="h-72">
             <HabitHistoryChart data={stats.chartData} />
           </div>
-        </div>
-        <div className="rounded-xl border border-slate-300 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/60">
-          <h3 className="text-base font-semibold text-slate-700 dark:text-slate-200">Highlights</h3>
-          <ul className="mt-4 space-y-3 text-sm text-slate-600 dark:text-slate-300">
+        </CollapsibleCard>
+        <CollapsibleCard title="Highlights">
+          <ul className="space-y-3 text-sm text-slate-600 dark:text-slate-300">
             <li>
               <span className="font-semibold">Top Habit:</span>{' '}
               {habitBreakdown[0] ? `${habitBreakdown[0].name} - ${habitBreakdown[0].count} completions` : 'No completions yet'}
@@ -220,40 +219,31 @@ const AnalyticsPage: React.FC<AnalyticsPageProps> = ({ stats, logs, history, hab
               <span className="font-semibold">Current Bonus:</span> {Math.round((stats.streakBonusMultiplier - 1) * 100)}%
             </li>
           </ul>
-        </div>
+        </CollapsibleCard>
       </section>
 
-      <section>
-        <h2 className="text-lg font-semibold text-slate-700 dark:text-slate-200">Category Performance</h2>
-        <div className="mt-4 rounded-xl border border-slate-300 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/60">
-          <CategoryRadialChart habits={habits} logs={logs} />
-        </div>
-      </section>
+      <CollapsibleCard title="Category Performance">
+        <CategoryRadialChart habits={habits} logs={logs} />
+      </CollapsibleCard>
 
-      <section>
-        <h2 className="text-lg font-semibold text-slate-700 dark:text-slate-200">Completion Timeline</h2>
-        <div className="mt-4 rounded-xl border border-slate-300 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/60">
-          <StreakTimeline logs={logs} />
-        </div>
-      </section>
+      <CollapsibleCard title="Completion Timeline">
+        <StreakTimeline logs={logs} />
+      </CollapsibleCard>
 
-      <section>
-        <h2 className="text-lg font-semibold text-slate-700 dark:text-slate-200">Habit Hierarchy</h2>
-        <div className="mt-4 rounded-xl border border-slate-300 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/60">
-          <HabitSunburst habits={habits} logs={logs} />
-        </div>
-      </section>
+      <CollapsibleCard title="Habit Hierarchy">
+        <HabitSunburst habits={habits} logs={logs} />
+      </CollapsibleCard>
 
-      <section>
-        <h2 className="text-lg font-semibold text-slate-700 dark:text-slate-200">Completion Patterns</h2>
-        <div className="mt-4 rounded-xl border border-slate-300 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/60">
-          <TimeScatterPlot habits={habits} history={history} />
-        </div>
-      </section>
+      <CollapsibleCard title="Completion Patterns">
+        <TimeScatterPlot habits={habits} history={history} />
+      </CollapsibleCard>
 
-      <section>
-        <h3 className="text-base font-semibold text-slate-700 dark:text-slate-200">Habit Breakdown</h3>
-        <div className="mt-4 overflow-hidden rounded-xl border border-slate-300 bg-white dark:border-slate-800 dark:bg-slate-900/60">
+      <CollapsibleCard title="Completion Calendar">
+        <CompletionHeatmap logs={logs} />
+      </CollapsibleCard>
+
+      <CollapsibleCard title="Habit Breakdown">
+        <div className="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700">
           <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
             <thead className="bg-slate-100/70 dark:bg-slate-800/60">
               <tr>
@@ -285,7 +275,7 @@ const AnalyticsPage: React.FC<AnalyticsPageProps> = ({ stats, logs, history, hab
             </tbody>
           </table>
         </div>
-      </section>
+      </CollapsibleCard>
     </div>
   );
 };
