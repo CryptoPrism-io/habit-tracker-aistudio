@@ -138,11 +138,11 @@ const CompletionHeatmap: React.FC<CompletionHeatmapProps> = ({ logs }) => {
       </div>
 
       {/* Day Headers */}
-      <div className="grid grid-cols-7 gap-0.5">
+      <div className="grid grid-cols-7 gap-0">
         {DAY_NAMES.map((day) => (
           <div
             key={day}
-            className="w-6 h-6 flex items-center justify-center font-semibold text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide"
+            className="w-7 h-7 flex items-center justify-center font-semibold text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide"
           >
             {day[0]}
           </div>
@@ -150,13 +150,13 @@ const CompletionHeatmap: React.FC<CompletionHeatmapProps> = ({ logs }) => {
       </div>
 
       {/* Calendar Grid */}
-      <div className="grid grid-cols-7 gap-0.5">
+      <div className="grid grid-cols-7 gap-0">
         {calendarDays.map((day, index) => {
           if (!day) {
             return (
               <div
                 key={`empty-${index}`}
-                className="w-6 h-6 rounded-sm bg-transparent"
+                className="w-7 h-7 rounded-sm bg-transparent"
               />
             );
           }
@@ -164,7 +164,7 @@ const CompletionHeatmap: React.FC<CompletionHeatmapProps> = ({ logs }) => {
           return (
             <div
               key={day.date}
-              className={`w-6 h-6 rounded-sm cursor-pointer transition ${getColor(day.count)} flex items-center justify-center text-center group relative`}
+              className={`w-7 h-7 rounded-sm cursor-pointer transition ${getColor(day.count)} flex items-center justify-center text-center group relative`}
               title={`${getFormattedDate(day.date)}: ${day.count} ${day.count === 1 ? 'completion' : 'completions'}`}
             >
               <span className="font-bold text-xs text-slate-700 dark:text-slate-100 group-hover:font-black leading-none">
