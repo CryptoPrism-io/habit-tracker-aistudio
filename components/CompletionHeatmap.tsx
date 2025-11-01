@@ -12,6 +12,7 @@ const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 interface CalendarDay {
   date: string;
   count: number;
+  day: number;
   dayOfWeek: number;
   displayDate: Date;
 }
@@ -20,7 +21,7 @@ const CompletionHeatmap: React.FC<CompletionHeatmapProps> = ({ logs }) => {
   // State for currently selected month
   const [monthOffset, setMonthOffset] = useState(0); // 0 = current month, -1 = last month, etc.
 
-  const { monthData, maxCompletions } = useMemo(() => {
+  const { monthData, maxCompletions, calendarDays } = useMemo(() => {
     const logsMap = new Map<string, number>();
 
     logs.forEach((log) => {
@@ -33,39 +34,52 @@ const CompletionHeatmap: React.FC<CompletionHeatmapProps> = ({ logs }) => {
 
     const month = displayDate.getMonth();
     const year = displayDate.getFullYear();
-    const monthDays: CalendarDay[] = [];
     let max = 0;
 
     // Get the first day of the month
     const firstDay = new Date(year, month, 1);
     // Get the last day of the month
     const lastDay = new Date(year, month + 1, 0);
+    const startingDayOfWeek = firstDay.getDay();
 
-    // Fill in days from this month
+    // Build calendar array with proper grid structure
+    const allDays: (CalendarDay | null)[] = [];
+
+    // Add empty slots for days before month starts
+    for (let i = 0; i < startingDayOfWeek; i++) {
+      allDays.push(null);
+    }
+
+    // Add days of the month
     for (let day = 1; day <= lastDay.getDate(); day++) {
       const cellDate = new Date(year, month, day);
       const dateStr = getISODateString(cellDate);
       const count = logsMap.get(dateStr) || 0;
       max = Math.max(max, count);
 
-      monthDays.push({
+      allDays.push({
         date: dateStr,
         count,
+        day,
         dayOfWeek: cellDate.getDay(),
         displayDate: cellDate,
       });
     }
 
-    return { monthData: { month, year, days: monthDays, monthName: MONTH_NAMES[month] }, maxCompletions: max };
+    return {
+      monthData: { month, year, monthName: MONTH_NAMES[month] },
+      maxCompletions: max,
+      calendarDays: allDays,
+    };
   }, [logs, monthOffset]);
 
   const getColor = (count: number) => {
-    if (count === 0) return 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700';
+    if (count === 0) return 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-150 dark:hover:bg-slate-700';
     const intensity = Math.min(count / Math.max(maxCompletions, 1), 1);
-    if (intensity < 0.25) return 'bg-cyan-200 dark:bg-cyan-900 hover:ring-cyan-300 dark:hover:ring-cyan-700';
-    if (intensity < 0.5) return 'bg-cyan-400 dark:bg-cyan-700 hover:ring-cyan-400 dark:hover:ring-cyan-600';
-    if (intensity < 0.75) return 'bg-cyan-500 dark:bg-cyan-600 hover:ring-cyan-400 dark:hover:ring-cyan-500';
-    return 'bg-cyan-600 dark:bg-cyan-500 hover:ring-cyan-500 dark:hover:ring-cyan-400';
+    if (intensity < 0.25) return 'bg-cyan-200 dark:bg-cyan-900 hover:ring-2 hover:ring-cyan-300 dark:hover:ring-cyan-700';
+    if (intensity < 0.5) return 'bg-cyan-400 dark:bg-cyan-700 hover:ring-2 hover:ring-cyan-400 dark:hover:ring-cyan-600';
+    if (intensity < 0.75) return 'bg-cyan-500 dark:bg-cyan-600 hover:ring-2 hover:ring-cyan-400 dark:hover:ring-cyan-500';
+    return 'bg-cyan-600 dark:bg-cyan-500 hover:ring-2 hover:ring-cyan-500 dark:hover:ring-cyan-400';
   };
 
   const getFormattedDate = (dateStr: string) => {
@@ -79,32 +93,7 @@ const CompletionHeatmap: React.FC<CompletionHeatmapProps> = ({ logs }) => {
     });
   };
 
-  // Build the calendar grid for the month
-  const firstDay = new Date(monthData.year, monthData.month, 1);
-  const startingDayOfWeek = firstDay.getDay();
-
-  // Create a 2D grid: 7 rows (days of week) x multiple columns (weeks)
-  const weeks: (CalendarDay | null)[][] = [];
-  let currentWeek: (CalendarDay | null)[] = Array(startingDayOfWeek).fill(null);
-
-  monthData.days.forEach((day) => {
-    if (currentWeek.length === 7) {
-      weeks.push(currentWeek);
-      currentWeek = [];
-    }
-    currentWeek.push(day);
-  });
-
-  // Fill the last week with empty slots
-  while (currentWeek.length < 7) {
-    currentWeek.push(null);
-  }
-  if (currentWeek.length > 0) {
-    weeks.push(currentWeek);
-  }
-
   // Check if we can navigate to next/prev month
-  const today = new Date();
   const canGoNext = monthOffset < 0;
   const canGoPrev = true; // Can always go to past months
 
@@ -128,69 +117,81 @@ const CompletionHeatmap: React.FC<CompletionHeatmapProps> = ({ logs }) => {
         <button
           onClick={() => setMonthOffset(monthOffset - 1)}
           disabled={!canGoPrev}
-          className="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
           aria-label="Previous month"
         >
           ← Prev
         </button>
 
-        <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-200">
+        <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">
           {monthData.monthName} {monthData.year}
         </h3>
 
         <button
           onClick={() => setMonthOffset(monthOffset + 1)}
           disabled={!canGoNext}
-          className="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
           aria-label="Next month"
         >
           Next →
         </button>
       </div>
 
-      {/* Calendar Grid */}
-      <div className="w-full">
-        <div className="flex gap-2">
-          {/* Day of week labels */}
-          <div className="flex flex-col gap-1 pt-6 text-xs font-medium text-slate-500 dark:text-slate-400">
-            {DAY_NAMES.map((day) => (
-              <div key={day} className="w-8 h-6 flex items-center justify-center">
-                {day[0]}
-              </div>
-            ))}
+      {/* Day Headers */}
+      <div className="grid grid-cols-7 gap-2">
+        {DAY_NAMES.map((day) => (
+          <div
+            key={day}
+            className="aspect-square flex items-center justify-center font-semibold text-sm text-slate-600 dark:text-slate-400 uppercase tracking-wide"
+          >
+            {day}
           </div>
+        ))}
+      </div>
 
-          {/* Calendar grid */}
-          <div className="flex gap-1 flex-wrap content-start">
-            {weeks.map((week, weekIndex) => (
-              <div key={weekIndex} className="flex flex-col gap-1">
-                {week.map((day, dayIndex) => {
-                  if (!day) {
-                    return (
-                      <div
-                        key={`empty-${dayIndex}`}
-                        className="w-6 h-6 rounded-sm"
-                      />
-                    );
-                  }
-                  return (
-                    <div
-                      key={day.date}
-                      className={`w-6 h-6 rounded-sm cursor-pointer transition hover:ring-2 hover:ring-offset-1 ${getColor(day.count)}`}
-                      title={`${getFormattedDate(day.date)}: ${day.count} ${day.count === 1 ? 'completion' : 'completions'}`}
-                    />
-                  );
-                })}
+      {/* Calendar Grid */}
+      <div className="grid grid-cols-7 gap-2 auto-rows-max">
+        {calendarDays.map((day, index) => {
+          if (!day) {
+            return (
+              <div
+                key={`empty-${index}`}
+                className="aspect-square rounded-lg bg-transparent"
+              />
+            );
+          }
+
+          return (
+            <div
+              key={day.date}
+              className={`aspect-square rounded-lg cursor-pointer transition ${getColor(day.count)} flex items-center justify-center text-center group relative`}
+              title={`${getFormattedDate(day.date)}: ${day.count} ${day.count === 1 ? 'completion' : 'completions'}`}
+            >
+              <div className="flex flex-col items-center justify-center w-full h-full">
+                <span className="font-bold text-sm text-slate-700 dark:text-slate-100 group-hover:font-extrabold">
+                  {day.day}
+                </span>
               </div>
-            ))}
-          </div>
-        </div>
+
+              {/* Tooltip on hover */}
+              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-slate-900 dark:bg-slate-950 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10 shadow-lg">
+                {getFormattedDate(day.date)}
+                <br />
+                {day.count} {day.count === 1 ? 'completion' : 'completions'}
+                <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-slate-900 dark:border-t-slate-950" />
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* Stats */}
       {maxCompletions > 0 && (
-        <div className="text-xs text-slate-500 dark:text-slate-400 pt-4 border-t border-slate-200 dark:border-slate-700">
-          <p>Maximum completions in a day: <span className="font-semibold text-slate-700 dark:text-slate-300">{maxCompletions}</span></p>
+        <div className="text-sm text-slate-600 dark:text-slate-400 pt-4 border-t border-slate-200 dark:border-slate-700">
+          <p>
+            Maximum completions in a day:{' '}
+            <span className="font-bold text-slate-900 dark:text-slate-100">{maxCompletions}</span>
+          </p>
         </div>
       )}
     </div>
