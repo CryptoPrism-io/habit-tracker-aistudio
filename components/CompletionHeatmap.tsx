@@ -138,25 +138,25 @@ const CompletionHeatmap: React.FC<CompletionHeatmapProps> = ({ logs }) => {
       </div>
 
       {/* Day Headers */}
-      <div className="grid grid-cols-7 gap-2">
+      <div className="grid grid-cols-7 gap-0.5">
         {DAY_NAMES.map((day) => (
           <div
             key={day}
-            className="aspect-square flex items-center justify-center font-semibold text-sm text-slate-600 dark:text-slate-400 uppercase tracking-wide"
+            className="w-6 h-6 flex items-center justify-center font-semibold text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide"
           >
-            {day}
+            {day[0]}
           </div>
         ))}
       </div>
 
       {/* Calendar Grid */}
-      <div className="grid grid-cols-7 gap-2 auto-rows-max">
+      <div className="grid grid-cols-7 gap-0.5">
         {calendarDays.map((day, index) => {
           if (!day) {
             return (
               <div
                 key={`empty-${index}`}
-                className="aspect-square rounded-lg bg-transparent"
+                className="w-6 h-6 rounded-sm bg-transparent"
               />
             );
           }
@@ -164,21 +164,19 @@ const CompletionHeatmap: React.FC<CompletionHeatmapProps> = ({ logs }) => {
           return (
             <div
               key={day.date}
-              className={`aspect-square rounded-lg cursor-pointer transition ${getColor(day.count)} flex items-center justify-center text-center group relative`}
+              className={`w-6 h-6 rounded-sm cursor-pointer transition ${getColor(day.count)} flex items-center justify-center text-center group relative`}
               title={`${getFormattedDate(day.date)}: ${day.count} ${day.count === 1 ? 'completion' : 'completions'}`}
             >
-              <div className="flex flex-col items-center justify-center w-full h-full">
-                <span className="font-bold text-sm text-slate-700 dark:text-slate-100 group-hover:font-extrabold">
-                  {day.day}
-                </span>
-              </div>
+              <span className="font-bold text-xs text-slate-700 dark:text-slate-100 group-hover:font-black leading-none">
+                {day.day < 10 ? day.day : (day.day % 10)}
+              </span>
 
               {/* Tooltip on hover */}
-              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-slate-900 dark:bg-slate-950 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10 shadow-lg">
+              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-slate-900 dark:bg-slate-950 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10 shadow-lg">
                 {getFormattedDate(day.date)}
                 <br />
                 {day.count} {day.count === 1 ? 'completion' : 'completions'}
-                <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-slate-900 dark:border-t-slate-950" />
+                <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-2 border-r-2 border-t-2 border-l-transparent border-r-transparent border-t-slate-900 dark:border-t-slate-950" />
               </div>
             </div>
           );
