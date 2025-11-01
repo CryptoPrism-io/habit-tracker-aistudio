@@ -31,7 +31,7 @@ const DUMMY_HABITS = [
 ];
 
 const HabitSunburst: React.FC<HabitSunburstProps> = ({ habits, logs }) => {
-  const data = useMemo(() => {
+  const { data, isDemoData } = useMemo(() => {
     // Count completions per habit
     const habitStats = new Map<string, { name: string; completions: number; category: string }>();
 
@@ -62,6 +62,7 @@ const HabitSunburst: React.FC<HabitSunburstProps> = ({ habits, logs }) => {
 
     // Check if we have meaningful data (any completions)
     const hasMeaningfulData = flatData.some((h) => h.completions > 0);
+    let isDemo = false;
 
     // If no real data or no completions, use dummy data
     if (flatData.length === 0 || !hasMeaningfulData) {
@@ -71,9 +72,10 @@ const HabitSunburst: React.FC<HabitSunburstProps> = ({ habits, logs }) => {
         completions: habit.completions,
         category: habit.category,
       }));
+      isDemo = true;
     }
 
-    return flatData;
+    return { data: flatData, isDemoData: isDemo };
   }, [habits, logs]);
 
   if (!data || data.length === 0) {
@@ -85,39 +87,46 @@ const HabitSunburst: React.FC<HabitSunburstProps> = ({ habits, logs }) => {
   }
 
   return (
-    <div className="w-full h-96">
-      <ResponsiveContainer width="100%" height="100%">
-        <Treemap
-          data={data}
-          dataKey="value"
-          stroke="#1e293b"
-          fill="#06b6d4"
-          content={<CustomizedContent />}
-        >
-          <Tooltip
-            contentStyle={{
-              backgroundColor: '#1e293b',
-              border: '1px solid #475569',
-              borderRadius: '8px',
-              color: '#e2e8f0',
-            }}
-            content={({ active, payload }) => {
-              if (active && payload && payload.length > 0) {
-                const data = payload[0].payload as any;
-                return (
-                  <div className="rounded bg-slate-900 p-2 text-xs text-slate-100 border border-slate-700">
-                    <p className="font-semibold">{data.name}</p>
-                    {data.completions !== undefined && (
-                      <p className="text-slate-400">{data.completions} completions</p>
-                    )}
-                  </div>
-                );
-              }
-              return null;
-            }}
-          />
-        </Treemap>
-      </ResponsiveContainer>
+    <div className="flex flex-col gap-3">
+      {isDemoData && (
+        <div className="px-3 py-2 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg text-xs font-medium text-blue-700 dark:text-blue-300">
+          📊 Demo Data - Complete your habits to see real data
+        </div>
+      )}
+      <div className="w-full h-96">
+        <ResponsiveContainer width="100%" height="100%">
+          <Treemap
+            data={data}
+            dataKey="value"
+            stroke="#1e293b"
+            fill="#06b6d4"
+            content={<CustomizedContent />}
+          >
+            <Tooltip
+              contentStyle={{
+                backgroundColor: '#1e293b',
+                border: '1px solid #475569',
+                borderRadius: '8px',
+                color: '#e2e8f0',
+              }}
+              content={({ active, payload }) => {
+                if (active && payload && payload.length > 0) {
+                  const data = payload[0].payload as any;
+                  return (
+                    <div className="rounded bg-slate-900 p-2 text-xs text-slate-100 border border-slate-700">
+                      <p className="font-semibold">{data.name}</p>
+                      {data.completions !== undefined && (
+                        <p className="text-slate-400">{data.completions} completions</p>
+                      )}
+                    </div>
+                  );
+                }
+                return null;
+              }}
+            />
+          </Treemap>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 };
