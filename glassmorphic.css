@@ -53,11 +53,12 @@ html:not(.dark) {
 
 /* 🌌 Background Gradient - Dark Mode */
 html.dark body {
-  background: radial-gradient(
-    ellipse at center,
-    #1a2850 0%,
-    #131b3a 50%,
-    #0a0e27 100%
+  background-color: #020617;
+  background-image: radial-gradient(
+    ellipse at top,
+    rgba(56, 189, 248, 0.12) 0%,
+    rgba(15, 23, 42, 0.85) 45%,
+    rgba(2, 6, 23, 1) 100%
   );
   background-attachment: fixed;
 }

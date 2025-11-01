@@ -1026,7 +1026,7 @@ const AppShell: React.FC<{ theme: string; onToggleTheme: () => void; children: R
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 transition dark:bg-slate-950 dark:text-slate-100 dark:has-[html.dark]:bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
+    <div className="min-h-screen bg-slate-50 text-slate-900 transition-colors duration-300 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 dark:text-slate-100">
       <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-10 sm:px-8">
         <header className="glass-card-strong flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
