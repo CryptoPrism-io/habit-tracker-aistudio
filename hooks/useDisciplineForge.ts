@@ -89,7 +89,9 @@ export const useDisciplineForge = () => {
       const yesterdayStr = getISODateString(new Date(Date.now() - 864e5));
       const latestLogDate = completedLogs[0].date;
 
-      if (latestLogDate === todayStr || latestLogDate === yesterdayStr) {
+      // Streak is only active if the latest completion is from today
+      // (showing an active, ongoing streak that can be extended)
+      if (latestLogDate === todayStr) {
         streak = 1;
         for (let i = 0; i < completedLogs.length - 1; i++) {
           if (areDatesConsecutive(completedLogs[i].date, completedLogs[i + 1].date)) {
@@ -102,11 +104,27 @@ export const useDisciplineForge = () => {
     }
 
     let totalPoints = 0;
-    logs.forEach((log) => {
+    // Calculate total points with historical streak bonuses applied
+    logs.forEach((log, logIndex) => {
+      // Calculate what the streak was on this day
+      let dayStreak = 0;
+      for (let i = logIndex; i >= 0; i--) {
+        if (logs[i].completedHabitIds.length > 0) {
+          dayStreak++;
+          if (i > 0 && !areDatesConsecutive(logs[i].date, logs[i - 1].date)) {
+            break;
+          }
+        } else {
+          break;
+        }
+      }
+
+      const dayStreakBonusMultiplier = 1 + Math.min(dayStreak, MAX_STREAK_BONUS_DAYS) * STREAK_BONUS_PER_DAY;
+
       log.completedHabitIds.forEach((habitId) => {
         const habit = habits.find((h) => h.id === habitId);
         if (habit) {
-          totalPoints += habit.points * (habit.streakMultiplier ?? 1);
+          totalPoints += habit.points * (habit.streakMultiplier ?? 1) * dayStreakBonusMultiplier;
         }
       });
     });
@@ -151,7 +169,7 @@ export const useDisciplineForge = () => {
   }, [logs, habits]);
 
   const toggleHabit = useCallback(
-    (habitId: string, dateStr: string = getISODateString(new Date())) => {
+    (habitId: string, dateStr: string = getISODateString(new Date()), note?: string) => {
       setState((current) => {
         const history = { ...current.history };
         const record = history[dateStr]
@@ -165,6 +183,7 @@ export const useDisciplineForge = () => {
           record.entries.push({
             habitId,
             completedAt: new Date().toISOString(),
+            note: note && note.trim() ? note.trim() : undefined,
           });
         }
 

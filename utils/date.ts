@@ -12,3 +12,16 @@ export const areDatesConsecutive = (dateStr1: string, dateStr2: string): boolean
     d2.setDate(d2.getDate() + 1);
     return getISODateString(d1) === getISODateString(d2);
 };
+
+export const formatTimeOfDay = (isoTimestamp: string): string => {
+    try {
+        const date = new Date(isoTimestamp);
+        return date.toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        });
+    } catch {
+        return '';
+    }
+};

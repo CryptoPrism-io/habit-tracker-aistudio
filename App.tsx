@@ -12,7 +12,12 @@ import {
 import { useDisciplineForge } from './hooks/useDisciplineForge';
 import { useTheme } from './hooks/useTheme';
 import HabitHistoryChart from './components/HabitHistoryChart';
-import { getISODateString } from './utils/date';
+import CategoryRadialChart from './components/CategoryRadialChart';
+import CompletionHeatmap from './components/CompletionHeatmap';
+import TimeScatterPlot from './components/TimeScatterPlot';
+import StreakTimeline from './components/StreakTimeline';
+import HabitSunburst from './components/HabitSunburst';
+import { getISODateString, formatTimeOfDay } from './utils/date';
 
 const ACCESS_CODE = '1111';
 const ACCESS_STORAGE_KEY = 'discipline-forge-access-granted';
@@ -120,7 +125,7 @@ const AccessGate: React.FC<{ onSubmit: (code: string) => boolean }> = ({ onSubmi
             autoFocus
           />
         </label>
-        {error ? <p className="text-sm text-rose-400">{error}</p> : null}
+        {error ? <p role="alert" className="text-sm text-rose-400">{error}</p> : null}
         <button type="submit" className="w-full rounded-lg bg-cyan-500 py-2 text-sm font-semibold text-white hover:bg-cyan-600">
           Unlock Phase 2
         </button>
@@ -214,6 +219,34 @@ const AnalyticsPage: React.FC<AnalyticsPageProps> = ({ stats, logs, history, hab
               <span className="font-semibold">Current Bonus:</span> {Math.round((stats.streakBonusMultiplier - 1) * 100)}%
             </li>
           </ul>
+        </div>
+      </section>
+
+      <section>
+        <h2 className="text-lg font-semibold text-slate-700 dark:text-slate-200">Category Performance</h2>
+        <div className="mt-4 rounded-xl border border-slate-200/70 bg-white/70 p-4 dark:border-slate-800 dark:bg-slate-900/60">
+          <CategoryRadialChart habits={habits} logs={logs} />
+        </div>
+      </section>
+
+      <section>
+        <h2 className="text-lg font-semibold text-slate-700 dark:text-slate-200">Completion Timeline</h2>
+        <div className="mt-4 rounded-xl border border-slate-200/70 bg-white/70 p-4 dark:border-slate-800 dark:bg-slate-900/60">
+          <StreakTimeline logs={logs} />
+        </div>
+      </section>
+
+      <section>
+        <h2 className="text-lg font-semibold text-slate-700 dark:text-slate-200">Habit Hierarchy</h2>
+        <div className="mt-4 rounded-xl border border-slate-200/70 bg-white/70 p-4 dark:border-slate-800 dark:bg-slate-900/60">
+          <HabitSunburst habits={habits} logs={logs} />
+        </div>
+      </section>
+
+      <section>
+        <h2 className="text-lg font-semibold text-slate-700 dark:text-slate-200">Completion Patterns</h2>
+        <div className="mt-4 rounded-xl border border-slate-200/70 bg-white/70 p-4 dark:border-slate-800 dark:bg-slate-900/60">
+          <TimeScatterPlot habits={habits} history={history} />
         </div>
       </section>
 
@@ -533,6 +566,7 @@ const HabitManagerPage: React.FC<HabitManagerPageProps> = ({ habits, onAddHabit,
                   onClick={() =>
                     setFormState((prev) => ({ ...prev, tags: mergeTagValue(prev.tags, tag) }))
                   }
+                  aria-label={`Add tag: ${tag}`}
                   className="rounded-full border border-slate-200 px-2 py-1 font-medium text-slate-500 transition hover:border-cyan-400 hover:text-cyan-600 dark:border-slate-700 dark:text-slate-400 dark:hover:border-cyan-500 dark:hover:text-cyan-300"
                 >
                   #{tag}
@@ -541,7 +575,7 @@ const HabitManagerPage: React.FC<HabitManagerPageProps> = ({ habits, onAddHabit,
             </div>
           </label>
 
-          {error ? <p className="sm:col-span-2 text-sm text-rose-500">{error}</p> : null}
+          {error ? <p role="alert" className="sm:col-span-2 text-sm text-rose-500">{error}</p> : null}
 
           <div className="sm:col-span-2 flex justify-end gap-3">
             <button type="button" onClick={resetForm} className="rounded-lg bg-transparent px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
@@ -677,6 +711,7 @@ const HabitManagerPage: React.FC<HabitManagerPageProps> = ({ habits, onAddHabit,
                           onClick={() =>
                             setEditingState((prev) => ({ ...prev, tags: mergeTagValue(prev.tags, tag) }))
                           }
+                          aria-label={`Add tag: ${tag}`}
                           className="rounded-full border border-slate-200 px-2 py-1 font-medium text-slate-500 transition hover:border-cyan-400 hover:text-cyan-600 dark:border-slate-700 dark:text-slate-400 dark:hover:border-cyan-500 dark:hover:text-cyan-300"
                         >
                           #{tag}
@@ -743,16 +778,49 @@ interface DashboardPageProps {
   stats: ForgeStats;
   habits: Habit[];
   logs: DailyLog[];
+  history: Record<string, DailyRecord>;
   onToggleHabit: (habitId: string, date?: string) => void;
 }
 
-const DashboardPage: React.FC<DashboardPageProps> = ({ stats, habits, logs, onToggleHabit }) => {
+const DashboardPage: React.FC<DashboardPageProps> = ({ stats, habits, logs, history, onToggleHabit }) => {
+  const [noteBeingAdded, setNoteBeingAdded] = useState<{ habitId: string; note: string } | null>(null);
   const today = getISODateString(new Date());
   const todayCompleted = useMemo(() => {
     const log = logs.find((entry) => entry.date === today);
     return new Set(log?.completedHabitIds ?? []);
   }, [logs, today]);
+  const todayRecord = useMemo(() => history[today], [history, today]);
+  const completionTimeMap = useMemo(() => {
+    const map = new Map<string, { time: string; note?: string }>();
+    if (todayRecord) {
+      todayRecord.entries.forEach((entry) => {
+        map.set(entry.habitId, {
+          time: formatTimeOfDay(entry.completedAt),
+          note: entry.note
+        });
+      });
+    }
+    return map;
+  }, [todayRecord]);
   const sortedHabits = useMemo(() => [...habits].sort((a, b) => a.name.localeCompare(b.name)), [habits]);
+
+  const handleCompleteWithNote = useCallback((habitId: string) => {
+    const isCompleted = todayCompleted.has(habitId);
+    if (isCompleted) {
+      // Just toggle off without asking for a note
+      onToggleHabit(habitId, today);
+    } else {
+      // Show note input
+      setNoteBeingAdded({ habitId, note: '' });
+    }
+  }, [todayCompleted, today, onToggleHabit]);
+
+  const handleConfirmNote = useCallback(() => {
+    if (noteBeingAdded) {
+      onToggleHabit(noteBeingAdded.habitId, today, noteBeingAdded.note);
+      setNoteBeingAdded(null);
+    }
+  }, [noteBeingAdded, today, onToggleHabit]);
 
   return (
     <div className="space-y-8">
@@ -776,14 +844,15 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ stats, habits, logs, onTo
         <div className="mt-4 space-y-3">
           {sortedHabits.map((habit) => {
             const isCompleted = todayCompleted.has(habit.id);
+            const completionInfo = completionTimeMap.get(habit.id);
             return (
               <div
                 key={habit.id}
                 className="flex items-center justify-between rounded-xl border border-slate-200/70 bg-white/70 p-4 transition hover:border-cyan-400 hover:shadow-md dark:border-slate-800 dark:bg-slate-900/60"
               >
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4 flex-1">
                   <HabitIconBadge habit={habit} />
-                  <div>
+                  <div className="flex-1">
                     <p className="text-base font-semibold text-slate-800 dark:text-slate-100">{habit.name}</p>
                     <p className="text-xs uppercase tracking-wide text-cyan-500">{formatCategory(habit.category)}</p>
                     <div className="mt-1 flex flex-wrap gap-2 text-xs text-slate-500 dark:text-slate-400">
@@ -792,22 +861,29 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ stats, habits, logs, onTo
                       {habit.streakMultiplier && habit.streakMultiplier !== 1 ? (
                         <span>{Math.round((habit.streakMultiplier - 1) * 100)}% bonus</span>
                       ) : null}
+                      {isCompleted && completionInfo?.time ? (
+                        <span className="text-emerald-600 dark:text-emerald-400">at {completionInfo.time}</span>
+                      ) : null}
                     </div>
                     {habit.description ? (
                       <p className="mt-2 max-w-xl text-sm text-slate-500 dark:text-slate-400">{habit.description}</p>
+                    ) : null}
+                    {isCompleted && completionInfo?.note ? (
+                      <p className="mt-2 text-sm text-slate-600 dark:text-slate-300 italic">Note: {completionInfo.note}</p>
                     ) : null}
                   </div>
                 </div>
                 <button
                   type="button"
-                  onClick={() => onToggleHabit(habit.id, today)}
-                  className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                  onClick={() => handleCompleteWithNote(habit.id)}
+                  aria-label={isCompleted ? `Mark ${habit.name} as incomplete` : `Mark ${habit.name} as complete`}
+                  className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition flex items-center gap-2 ${
                     isCompleted
                       ? 'bg-emerald-500 text-white hover:bg-emerald-600'
                       : 'bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'
                   }`}
                 >
-                  {isCompleted ? 'Completed' : 'Mark Complete'}
+                  {isCompleted ? '✓ Completed' : 'Mark Complete'}
                 </button>
               </div>
             );
@@ -817,6 +893,47 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ stats, habits, logs, onTo
               No active habits yet. Head to the Habit Manager to create your first ritual.
             </div>
           ) : null}
+        </div>
+
+        {noteBeingAdded ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <div className="rounded-2xl bg-white p-6 shadow-xl dark:bg-slate-900 w-full max-w-md mx-4">
+              <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4">
+                Add a note for {habits.find(h => h.id === noteBeingAdded.habitId)?.name}
+              </h3>
+              <textarea
+                value={noteBeingAdded.note}
+                onChange={(e) => setNoteBeingAdded({ ...noteBeingAdded, note: e.target.value })}
+                placeholder="How did it go? Any observations?"
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"
+                rows={3}
+                autoFocus
+              />
+              <div className="mt-4 flex gap-3 justify-end">
+                <button
+                  type="button"
+                  onClick={() => setNoteBeingAdded(null)}
+                  className="rounded-lg bg-transparent px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
+                >
+                  Skip
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmNote}
+                  className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600"
+                >
+                  Confirm
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </section>
+
+      <section>
+        <h2 className="text-lg font-semibold text-slate-700 dark:text-slate-200">Completion Calendar</h2>
+        <div className="mt-4 rounded-xl border border-slate-200/70 bg-white/70 p-4 dark:border-slate-800 dark:bg-slate-900/60">
+          <CompletionHeatmap logs={logs} />
         </div>
       </section>
 
@@ -912,7 +1029,7 @@ const App: React.FC = () => {
     <AppShell theme={theme} onToggleTheme={toggleTheme}>
       <Routes>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/dashboard" element={<DashboardPage stats={stats} habits={habits} logs={logs} onToggleHabit={toggleHabit} />} />
+        <Route path="/dashboard" element={<DashboardPage stats={stats} habits={habits} logs={logs} history={history} onToggleHabit={toggleHabit} />} />
         <Route path="/habits" element={<HabitManagerPage habits={habits} onAddHabit={addHabit} onUpdateHabit={updateHabit} />} />
         <Route path="/analytics" element={<AnalyticsPage stats={stats} logs={logs} history={history} habits={habits} />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />

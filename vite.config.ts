@@ -2,6 +2,7 @@ import path from 'path';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
+// Tailwind CSS is loaded via CDN in index.html, so no Vite plugin needed
 
 const REPO_BASE = '/habit-tracker-aistudio/';
 
@@ -18,6 +19,7 @@ export default defineConfig(({ mode }) => {
       },
       plugins: [
         react(),
+        // Tailwind v4 plugin removed - using CDN instead for simplicity
         VitePWA({
           registerType: 'prompt',
           includeAssets: [
