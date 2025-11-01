@@ -229,17 +229,6 @@ const CategoryRadialChart: React.FC<CategoryRadialChartProps> = ({ habits, logs,
 
   const data = categoryInfo;
 
-  if (data.length === 0) {
-    return (
-      <div className="flex h-96 items-center justify-center rounded-2xl border border-slate-200/30 backdrop-blur-sm bg-gradient-to-br from-slate-50/50 to-slate-100/50 dark:border-slate-700/30 dark:from-slate-900/50 dark:to-slate-800/50 text-slate-500 dark:text-slate-400">
-        <div className="text-center">
-          <p className="text-sm font-medium">No habit data yet</p>
-          <p className="text-xs opacity-75 mt-1">Create and complete habits to see performance</p>
-        </div>
-      </div>
-    );
-  }
-
   const customTooltip = (props: any) => {
     const { active, payload } = props;
     if (active && payload && payload.length) {
@@ -302,86 +291,97 @@ const CategoryRadialChart: React.FC<CategoryRadialChartProps> = ({ habits, logs,
 
       {/* Chart container */}
       <div className="relative z-10 w-full h-[360px]">
-        <ResponsiveContainer width="100%" height="100%">
-          <RadarChart data={radarData} margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
-            <PolarGrid
-              stroke="rgba(148, 163, 184, 0.15)"
-              strokeDasharray="0"
-              isAnimationActive={true}
-            />
-            <PolarAngleAxis
-              dataKey="category"
-              tick={{
-                fill: '#94a3b8',
-                fontSize: 11,
-                fontWeight: 500,
-              }}
-            />
-            <PolarRadiusAxis
-              angle={90}
-              domain={[0, maxValue]}
-              tick={{
-                fill: '#94a3b8',
-                fontSize: 10,
-              }}
-              axisLineType="circle"
-            />
-            <Tooltip content={customTooltip} />
-            <Radar
-              name="Completion Rate"
-              dataKey="rate"
-              stroke="#06b6d4"
-              fill="#06b6d4"
-              fillOpacity={0.4}
-              animationDuration={1200}
-              animationEasing="ease-out"
-              isAnimationActive={true}
-              strokeWidth={2.5}
-              dot={{ fill: '#06b6d4', r: 4, strokeWidth: 2.5, stroke: '#fff' }}
-              activeDot={{ r: 6.5, strokeWidth: 3 }}
-            />
-            <Legend
-              layout="horizontal"
-              verticalAlign="bottom"
-              align="center"
-              wrapperStyle={{
-                paddingTop: '12px',
-                fontSize: '11px',
-                fontWeight: 500,
-              }}
-              iconType="circle"
-              iconSize={6}
-            />
-          </RadarChart>
-        </ResponsiveContainer>
+        {data.length === 0 ? (
+          <div className="flex h-full items-center justify-center rounded-xl border border-slate-200/20 dark:border-slate-700/20 bg-gradient-to-br from-slate-50/30 to-slate-100/30 dark:from-slate-900/30 dark:to-slate-800/30">
+            <div className="text-center px-6">
+              <p className="text-sm font-medium text-slate-600 dark:text-slate-300">No habit data available</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Create and complete habits to see performance metrics</p>
+            </div>
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <RadarChart data={radarData} margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
+              <PolarGrid
+                stroke="rgba(148, 163, 184, 0.15)"
+                strokeDasharray="0"
+                isAnimationActive={true}
+              />
+              <PolarAngleAxis
+                dataKey="category"
+                tick={{
+                  fill: '#94a3b8',
+                  fontSize: 11,
+                  fontWeight: 500,
+                }}
+              />
+              <PolarRadiusAxis
+                angle={90}
+                domain={[0, maxValue]}
+                tick={{
+                  fill: '#94a3b8',
+                  fontSize: 10,
+                }}
+                axisLineType="circle"
+              />
+              <Tooltip content={customTooltip} />
+              <Radar
+                name="Completion Rate"
+                dataKey="rate"
+                stroke="#06b6d4"
+                fill="#06b6d4"
+                fillOpacity={0.4}
+                animationDuration={1200}
+                animationEasing="ease-out"
+                isAnimationActive={true}
+                strokeWidth={2.5}
+                dot={{ fill: '#06b6d4', r: 4, strokeWidth: 2.5, stroke: '#fff' }}
+                activeDot={{ r: 6.5, strokeWidth: 3 }}
+              />
+              <Legend
+                layout="horizontal"
+                verticalAlign="bottom"
+                align="center"
+                wrapperStyle={{
+                  paddingTop: '12px',
+                  fontSize: '11px',
+                  fontWeight: 500,
+                }}
+                iconType="circle"
+                iconSize={6}
+              />
+            </RadarChart>
+          </ResponsiveContainer>
+        )}
       </div>
 
-      {/* Stats summary bar */}
-      <div className="absolute bottom-0 left-0 right-0 px-6 py-3 border-t border-slate-200/20 dark:border-slate-700/20 backdrop-blur-sm bg-gradient-to-r from-transparent via-slate-50/50 to-transparent dark:via-slate-800/50 rounded-b-2xl">
-        <div className="flex items-center justify-between text-xs gap-4">
-          <div className="text-slate-600 dark:text-slate-400">
-            <span className="font-semibold text-slate-900 dark:text-slate-100">{data.length}</span> <span className="opacity-75">categories</span>
-          </div>
-          <div className="text-slate-600 dark:text-slate-400">
-            {timePeriod === 'daily' ? (
-              <>
-                <span className="font-semibold text-cyan-500">{data.filter((d) => d.rate > 0).length}</span> <span className="opacity-75">started</span>
-              </>
-            ) : timePeriod === 'weekly' ? (
-              <>
-                <span className="font-semibold text-cyan-500">{data.reduce((sum, d) => sum + d.rate, 0)}</span> <span className="opacity-75">total completions</span>
-              </>
-            ) : (
-              <>
-                <span className="font-semibold text-cyan-500">{Math.round(data.reduce((sum, d) => sum + d.rate, 0) / data.length)}</span> <span className="opacity-75">% avg</span>
-              </>
-            )}
-          </div>
-          <div className="text-slate-600 dark:text-slate-400">
-            <span className="font-semibold text-slate-900 dark:text-slate-100">{data.reduce((sum, d) => sum + d.completed, 0)}</span> <span className="opacity-75">{timePeriod === 'daily' ? 'completed today' : 'completions'}</span>
+      {/* Stats summary bar - only show if there's data */}
+      {data.length > 0 && (
+        <div className="absolute bottom-0 left-0 right-0 px-6 py-3 border-t border-slate-200/20 dark:border-slate-700/20 backdrop-blur-sm bg-gradient-to-r from-transparent via-slate-50/50 to-transparent dark:via-slate-800/50 rounded-b-2xl">
+          <div className="flex items-center justify-between text-xs gap-4">
+            <div className="text-slate-600 dark:text-slate-400">
+              <span className="font-semibold text-slate-900 dark:text-slate-100">{data.length}</span> <span className="opacity-75">categories</span>
+            </div>
+            <div className="text-slate-600 dark:text-slate-400">
+              {timePeriod === 'daily' ? (
+                <>
+                  <span className="font-semibold text-cyan-500">{data.filter((d) => d.rate > 0).length}</span> <span className="opacity-75">started</span>
+                </>
+              ) : timePeriod === 'weekly' ? (
+                <>
+                  <span className="font-semibold text-cyan-500">{data.reduce((sum, d) => sum + d.rate, 0)}</span> <span className="opacity-75">total completions</span>
+                </>
+              ) : (
+                <>
+                  <span className="font-semibold text-cyan-500">{Math.round(data.reduce((sum, d) => sum + d.rate, 0) / data.length)}</span> <span className="opacity-75">% avg</span>
+                </>
+              )}
+            </div>
+            <div className="text-slate-600 dark:text-slate-400">
+              <span className="font-semibold text-slate-900 dark:text-slate-100">{data.reduce((sum, d) => sum + d.completed, 0)}</span> <span className="opacity-75">{timePeriod === 'daily' ? 'completed today' : 'completions'}</span>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
