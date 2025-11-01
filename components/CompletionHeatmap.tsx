@@ -138,11 +138,11 @@ const CompletionHeatmap: React.FC<CompletionHeatmapProps> = ({ logs }) => {
       </div>
 
       {/* Day Headers */}
-      <div className="grid grid-cols-7 gap-0">
+      <div className="grid grid-cols-7 gap-2">
         {DAY_NAMES.map((day) => (
           <div
             key={day}
-            className="w-7 h-7 flex items-center justify-center font-semibold text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide"
+            className="flex items-center justify-center font-semibold text-sm text-slate-600 dark:text-slate-400 uppercase tracking-wide h-10"
           >
             {day[0]}
           </div>
@@ -150,13 +150,13 @@ const CompletionHeatmap: React.FC<CompletionHeatmapProps> = ({ logs }) => {
       </div>
 
       {/* Calendar Grid */}
-      <div className="grid grid-cols-7 gap-0">
+      <div className="grid grid-cols-7 gap-2">
         {calendarDays.map((day, index) => {
           if (!day) {
             return (
               <div
                 key={`empty-${index}`}
-                className="w-7 h-7 rounded-sm bg-transparent"
+                className="rounded-lg bg-transparent aspect-square"
               />
             );
           }
@@ -164,11 +164,11 @@ const CompletionHeatmap: React.FC<CompletionHeatmapProps> = ({ logs }) => {
           return (
             <div
               key={day.date}
-              className={`w-7 h-7 rounded-sm cursor-pointer transition ${getColor(day.count)} flex items-center justify-center text-center group relative`}
+              className={`rounded-lg cursor-pointer transition aspect-square ${getColor(day.count)} flex items-center justify-center text-center group relative`}
               title={`${getFormattedDate(day.date)}: ${day.count} ${day.count === 1 ? 'completion' : 'completions'}`}
             >
-              <span className="font-bold text-xs text-slate-700 dark:text-slate-100 group-hover:font-black leading-none">
-                {day.day < 10 ? day.day : (day.day % 10)}
+              <span className="font-bold text-sm text-slate-700 dark:text-slate-100 group-hover:font-black leading-none">
+                {day.day}
               </span>
 
               {/* Tooltip on hover */}
