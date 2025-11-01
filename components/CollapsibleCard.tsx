@@ -14,18 +14,18 @@ const CollapsibleCard: React.FC<CollapsibleCardProps> = ({
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
-    <div className="rounded-xl border border-slate-300 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/60 dark:shadow-lg">
+    <div className="glass-card-strong">
       {/* Header */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 rounded px-2 py-1 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50"
+        className="w-full flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 rounded px-2 py-1 transition-colors hover:bg-slate-50/20 dark:hover:bg-white/10"
         aria-expanded={isOpen}
         aria-label={`Toggle ${title} section`}
       >
-        <h3 className="text-base font-semibold text-slate-700 dark:text-slate-200">
+        <h3 className="text-base font-semibold text-slate-800 dark:text-slate-100 opacity-90">
           {title}
         </h3>
-        <span className="text-slate-500 dark:text-slate-400 transition-transform duration-200" style={{
+        <span className="text-slate-600 dark:text-slate-300 transition-transform duration-200 opacity-75" style={{
           transform: isOpen ? 'rotate(0deg)' : 'rotate(-90deg)'
         }}>
           ▼

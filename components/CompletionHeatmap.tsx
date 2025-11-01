@@ -164,10 +164,10 @@ const CompletionHeatmap: React.FC<CompletionHeatmapProps> = ({ logs }) => {
           return (
             <div
               key={day.date}
-              className={`rounded-lg cursor-pointer transition h-8 ${getColor(day.count)} flex items-center justify-center text-center group relative`}
+              className={`glass-calendar-cell flex items-center justify-center text-center group relative h-8 ${getColor(day.count)}`}
               title={`${getFormattedDate(day.date)}: ${day.count} ${day.count === 1 ? 'completion' : 'completions'}`}
             >
-              <span className="font-bold text-sm text-slate-700 dark:text-slate-100 group-hover:font-black leading-none">
+              <span className="font-bold text-sm text-slate-700 dark:text-slate-100 group-hover:font-black leading-none opacity-90">
                 {day.day}
               </span>
 

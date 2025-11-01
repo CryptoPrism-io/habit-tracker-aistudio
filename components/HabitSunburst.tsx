@@ -95,23 +95,23 @@ const HabitSunburst: React.FC<HabitSunburstProps> = ({ habits, logs }) => {
         </div>
       )}
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         {data.map((habit) => {
-          const colorClass = CATEGORY_COLORS[habit.category as keyof typeof CATEGORY_COLORS] ||
-            'bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-slate-100';
+          const categoryClass = `glass-${habit.category.replace(/_/g, '-')}`;
+          const baseClasses = `glass-card p-5 rounded-2xl border-2 transition-all hover:border-opacity-75 cursor-pointer group`;
 
           return (
             <div
               key={habit.name}
-              className={`p-4 rounded-lg border-2 ${colorClass} transition-all hover:shadow-md`}
+              className={`${baseClasses} ${categoryClass}`}
             >
-              <div className="font-semibold text-sm mb-2 truncate">
+              <div className="font-semibold text-sm mb-3 truncate text-slate-800 dark:text-slate-100 opacity-90 group-hover:opacity-100">
                 {habit.name}
               </div>
-              <div className="text-2xl font-bold">
+              <div className="text-3xl font-bold text-slate-800 dark:text-white mb-2 glow-text-cyan">
                 {habit.completions}
               </div>
-              <div className="text-xs opacity-75 mt-1">
+              <div className="text-xs opacity-70 text-slate-700 dark:text-slate-300">
                 {habit.completions === 1 ? 'completion' : 'completions'}
               </div>
             </div>

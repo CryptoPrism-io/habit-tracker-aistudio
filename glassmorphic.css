@@ -1,0 +1,368 @@
+/* ========================================
+   The Discipline Forge - Glassmorphic Design System
+   Modern Dark UI with Backdrop Blur Effects
+   ======================================== */
+
+/* 🎨 CSS Custom Properties - Glassmorphic Color Palette */
+:root {
+  /* Dark Background Colors */
+  --glass-bg-primary: rgba(15, 23, 42, 0.8);      /* Deep dark blue */
+  --glass-bg-secondary: rgba(30, 41, 59, 0.8);    /* Dark slate */
+  --glass-bg-tertiary: rgba(51, 65, 85, 0.8);     /* Medium slate */
+
+  /* Glassmorphism Effects */
+  --glass-blur: 20px;
+  --glass-saturate: 180%;
+  --glass-border-light: rgba(255, 255, 255, 0.1);
+  --glass-border-medium: rgba(255, 255, 255, 0.15);
+  --glass-border-strong: rgba(255, 255, 255, 0.25);
+
+  /* Accent Colors for Glassmorphic UI */
+  --accent-cyan: #06b6d4;
+  --accent-blue: #3b82f6;
+  --accent-orange: #ff6b35;
+  --accent-purple: #a855f7;
+  --accent-green: #10b981;
+  --accent-red: #ef4444;
+
+  /* Text Colors */
+  --text-primary: rgba(255, 255, 255, 0.95);
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --text-tertiary: rgba(255, 255, 255, 0.5);
+
+  /* Glow Effects */
+  --glow-cyan: 0 0 40px rgba(6, 182, 212, 0.4);
+  --glow-blue: 0 0 40px rgba(59, 130, 246, 0.4);
+  --glow-orange: 0 0 40px rgba(255, 107, 53, 0.4);
+  --glow-purple: 0 0 40px rgba(168, 85, 247, 0.4);
+  --glow-green: 0 0 40px rgba(16, 185, 129, 0.4);
+}
+
+/* Light Mode Overrides */
+html:not(.dark) {
+  --glass-bg-primary: rgba(255, 255, 255, 0.7);
+  --glass-bg-secondary: rgba(248, 250, 252, 0.8);
+  --glass-bg-tertiary: rgba(241, 245, 249, 0.8);
+  --glass-border-light: rgba(0, 0, 0, 0.05);
+  --glass-border-medium: rgba(0, 0, 0, 0.08);
+  --glass-border-strong: rgba(0, 0, 0, 0.12);
+  --text-primary: rgba(0, 0, 0, 0.95);
+  --text-secondary: rgba(0, 0, 0, 0.7);
+  --text-tertiary: rgba(0, 0, 0, 0.5);
+}
+
+/* 🌌 Background Gradient - Dark Mode */
+html.dark body {
+  background: radial-gradient(
+    ellipse at center,
+    #1a2850 0%,
+    #131b3a 50%,
+    #0a0e27 100%
+  );
+  background-attachment: fixed;
+}
+
+/* ✨ Glassmorphic Card - Base Style */
+.glass-card {
+  background: var(--glass-bg-primary);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border-light);
+  border-radius: 24px;
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.15),
+    0 6px 20px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+/* Glass Card - Strong Variant (More Prominent) */
+.glass-card-strong {
+  background: var(--glass-bg-secondary);
+  backdrop-filter: blur(30px) saturate(200%);
+  -webkit-backdrop-filter: blur(30px) saturate(200%);
+  border: 1px solid var(--glass-border-medium);
+  border-radius: 24px;
+  box-shadow:
+    0 16px 64px rgba(0, 0, 0, 0.2),
+    0 8px 32px rgba(0, 0, 0, 0.15),
+    inset 0 2px 0 rgba(255, 255, 255, 0.15);
+  transition: all 0.3s ease;
+}
+
+/* Glass Card - Hover Effect */
+.glass-card:hover,
+.glass-card-strong:hover {
+  border-color: var(--glass-border-medium);
+  transform: translateY(-2px);
+  box-shadow:
+    0 16px 48px rgba(0, 0, 0, 0.2),
+    0 8px 24px rgba(0, 0, 0, 0.15),
+    inset 0 2px 0 rgba(255, 255, 255, 0.15);
+}
+
+/* 🎯 Glassmorphic Button */
+.glass-button {
+  background: var(--glass-bg-primary);
+  backdrop-filter: blur(10px) saturate(150%);
+  -webkit-backdrop-filter: blur(10px) saturate(150%);
+  border: 1px solid var(--glass-border-light);
+  border-radius: 12px;
+  padding: 8px 16px;
+  color: var(--text-primary);
+  font-weight: 500;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.glass-button:hover {
+  background: var(--glass-bg-secondary);
+  border-color: var(--glass-border-medium);
+  transform: translateY(-2px);
+  box-shadow: var(--glow-blue);
+}
+
+/* 🎨 Gradient Text Utilities */
+.gradient-cyan {
+  background: linear-gradient(135deg, #ffffff 0%, var(--accent-cyan) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-blue {
+  background: linear-gradient(135deg, #ffffff 0%, var(--accent-blue) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-orange {
+  background: linear-gradient(135deg, #ffffff 0%, var(--accent-orange) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* 💫 Glow Text Effects */
+.glow-text-cyan {
+  color: var(--accent-cyan);
+  text-shadow: 0 0 20px rgba(6, 182, 212, 0.5);
+}
+
+.glow-text-blue {
+  color: var(--accent-blue);
+  text-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+}
+
+.glow-text-orange {
+  color: var(--accent-orange);
+  text-shadow: 0 0 20px rgba(255, 107, 53, 0.5);
+}
+
+.glow-text-green {
+  color: var(--accent-green);
+  text-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
+}
+
+/* 🔄 Animations */
+@keyframes pulse-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 10px currentColor);
+  }
+  50% {
+    filter: drop-shadow(0 0 20px currentColor);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* 🌈 Accent Color Utilities */
+.text-accent-cyan { color: var(--accent-cyan); }
+.text-accent-blue { color: var(--accent-blue); }
+.text-accent-orange { color: var(--accent-orange); }
+.text-accent-purple { color: var(--accent-purple); }
+.text-accent-green { color: var(--accent-green); }
+.text-accent-red { color: var(--accent-red); }
+
+/* 🎭 Backdrop Blur Utilities */
+.backdrop-blur-sm {
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.backdrop-blur-md {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.backdrop-blur-lg {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.backdrop-blur-xl {
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+}
+
+/* 📱 Container Utilities */
+.glass-container {
+  background: var(--glass-bg-primary);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border-light);
+  border-radius: 24px;
+  padding: 24px;
+}
+
+/* 🔲 Divider with Glassmorphic Style */
+.glass-divider {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--glass-border-light) 50%,
+    transparent 100%
+  );
+}
+
+/* 💎 Category Color Variants */
+.glass-sadhana {
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.1), rgba(6, 182, 212, 0.05));
+  border-color: rgba(6, 182, 212, 0.3);
+}
+
+.glass-wake-morning {
+  background: linear-gradient(135deg, rgba(251, 146, 60, 0.1), rgba(251, 146, 60, 0.05));
+  border-color: rgba(251, 146, 60, 0.3);
+}
+
+.glass-evening {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(168, 85, 247, 0.05));
+  border-color: rgba(168, 85, 247, 0.3);
+}
+
+.glass-bedtime {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05));
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.glass-learning {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05));
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.glass-reflection {
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.1), rgba(236, 72, 153, 0.05));
+  border-color: rgba(236, 72, 153, 0.3);
+}
+
+.glass-workout-supplements {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05));
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+/* 🌟 Calendar Grid Glassmorphic Effect */
+.glass-calendar-cell {
+  background: var(--glass-bg-primary);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border-light);
+  transition: all 0.3s ease;
+}
+
+.glass-calendar-cell:hover {
+  border-color: var(--glass-border-medium);
+  transform: scale(1.05);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+/* 🎨 Opacity Utilities for Glassmorphic Text */
+.opacity-90 { opacity: 0.9; }
+.opacity-75 { opacity: 0.75; }
+.opacity-70 { opacity: 0.7; }
+.opacity-60 { opacity: 0.6; }
+.opacity-50 { opacity: 0.5; }
+
+/* 📝 Glass Input Field Styling */
+.glass-input {
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 14px;
+  color: inherit;
+  transition: all 0.2s ease;
+}
+
+.glass-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-cyan);
+  border-color: transparent;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+html.dark .glass-input {
+  background: rgba(15, 23, 42, 0.5);
+  border-color: rgba(148, 163, 184, 0.2);
+  color: rgba(255, 255, 255, 0.95);
+}
+
+html.dark .glass-input:focus {
+  background: rgba(30, 41, 59, 0.7);
+}
+
+/* 📐 Smooth Transitions */
+.transition-glass {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.transition-smooth {
+  transition: all 0.2s ease-in-out;
+}
+
+/* ✨ Scrollbar Styling for Dark Mode */
+html.dark ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+html.dark ::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}

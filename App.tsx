@@ -71,10 +71,10 @@ const HabitIconBadge: React.FC<{ habit: Habit }> = ({ habit }) => {
 };
 
 const StatCard: React.FC<{ label: string; value: string; subLabel?: string }> = ({ label, value, subLabel }) => (
-  <div className="rounded-xl border border-slate-300 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:shadow-lg">
-    <p className="text-sm font-medium text-slate-600 dark:text-slate-300">{label}</p>
-    <p className="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">{value}</p>
-    {subLabel ? <p className="mt-1 text-xs text-slate-500 dark:text-slate-300">{subLabel}</p> : null}
+  <div className="glass-card p-5 rounded-2xl">
+    <p className="text-sm font-medium text-slate-600 dark:text-slate-300 opacity-75">{label}</p>
+    <p className="mt-2 text-3xl font-bold text-slate-900 dark:text-white glow-text-cyan">{value}</p>
+    {subLabel ? <p className="mt-1 text-xs text-slate-500 dark:text-slate-300 opacity-70">{subLabel}</p> : null}
   </div>
 );
 
@@ -82,10 +82,10 @@ const ThemeToggleButton: React.FC<{ theme: string; onToggle: () => void }> = ({ 
   <button
     type="button"
     onClick={onToggle}
-    className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-xs font-semibold text-slate-600 transition hover:border-cyan-400 hover:text-cyan-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-cyan-500 dark:hover:text-cyan-300"
+    className="glass-button flex h-10 w-10 items-center justify-center rounded-full text-xs font-semibold transition-all hover:border-cyan-400 hover:text-cyan-400 dark:hover:text-cyan-300"
     aria-label="Toggle theme"
   >
-    {theme === 'dark' ? 'LIGHT' : 'DARK'}
+    {theme === 'dark' ? '☀️' : '🌙'}
   </button>
 );
 
@@ -592,7 +592,7 @@ const HabitManagerPage: React.FC<HabitManagerPageProps> = ({ habits, onAddHabit,
         <h2 className="text-lg font-semibold text-slate-700 dark:text-slate-200">Active Habits</h2>
         <div className="mt-4 space-y-4">
           {habits.map((habit) => (
-            <div key={habit.id} className="rounded-xl border border-slate-300 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/60">
+            <div key={habit.id} className="glass-card p-5 rounded-2xl">
               {editingHabitId === habit.id ? (
                 <form onSubmit={handleEditSave} className="grid gap-4 sm:grid-cols-2">
                   <label className="flex flex-col gap-1 text-sm">
@@ -601,7 +601,7 @@ const HabitManagerPage: React.FC<HabitManagerPageProps> = ({ habits, onAddHabit,
                       type="text"
                       value={editingState.name}
                       onChange={(event) => setEditingState((prev) => ({ ...prev, name: event.target.value }))}
-                      className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
+                      className="rounded-lg backdrop-blur-sm border border-slate-300/50 bg-white/50 dark:bg-slate-800/50 dark:border-slate-600/50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                     />
                   </label>
 
@@ -875,7 +875,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ stats, habits, logs, hist
       <section>
         <h2 className="text-lg font-semibold text-slate-700 dark:text-slate-200">Progress Overview</h2>
         <div className="mt-4 grid gap-6 lg:grid-cols-[1fr,2fr]">
-          <div className="rounded-xl border border-slate-300 bg-white p-6 dark:border-slate-800 dark:bg-slate-900/60 flex items-center justify-center">
+          <div className="glass-card p-6 rounded-2xl flex items-center justify-center">
             <LevelProgressRing
               level={stats.level}
               pointsForCurrentLevel={stats.pointsForCurrentLevel}
@@ -905,14 +905,14 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ stats, habits, logs, hist
             return (
               <div
                 key={habit.id}
-                className="flex items-center justify-between rounded-xl border border-slate-300 bg-white p-4 transition hover:border-cyan-400 hover:shadow-md dark:border-slate-800 dark:bg-slate-900/60"
+                className="glass-card flex items-center justify-between p-5 rounded-2xl group"
               >
                 <div className="flex items-center gap-4 flex-1">
                   <HabitIconBadge habit={habit} />
                   <div className="flex-1">
-                    <p className="text-base font-semibold text-slate-800 dark:text-slate-100">{habit.name}</p>
-                    <p className="text-xs uppercase tracking-wide text-cyan-500">{formatCategory(habit.category)}</p>
-                    <div className="mt-1 flex flex-wrap gap-2 text-xs text-slate-500 dark:text-slate-300">
+                    <p className="text-base font-semibold text-slate-800 dark:text-slate-100 opacity-90 group-hover:opacity-100">{habit.name}</p>
+                    <p className="text-xs uppercase tracking-wide text-cyan-400 opacity-75">{formatCategory(habit.category)}</p>
+                    <div className="mt-1 flex flex-wrap gap-2 text-xs text-slate-500 dark:text-slate-300 opacity-70">
                       <span>{habit.points} pts</span>
                       {habit.durationMinutes ? <span>{habit.durationMinutes} min</span> : null}
                       {habit.streakMultiplier && habit.streakMultiplier !== 1 ? (
@@ -1026,25 +1026,25 @@ const AppShell: React.FC<{ theme: string; onToggleTheme: () => void; children: R
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 transition dark:bg-slate-950 dark:text-slate-100">
+    <div className="min-h-screen bg-slate-50 text-slate-900 transition dark:bg-slate-950 dark:text-slate-100 dark:has-[html.dark]:bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
       <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-10 sm:px-8">
-        <header className="flex flex-col gap-4 rounded-2xl border border-slate-300 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/60 sm:flex-row sm:items-center sm:justify-between">
+        <header className="glass-card-strong flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-sm uppercase tracking-[0.3em] text-cyan-500">Discipline Forge</p>
-            <h1 className="text-2xl font-bold">Phase 2 Command Deck</h1>
-            <p className="text-sm text-slate-600 dark:text-slate-300">Monitor progress, refine rituals, and track your momentum.</p>
+            <p className="text-sm uppercase tracking-[0.3em] text-cyan-400 font-semibold opacity-90">Discipline Forge</p>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Phase 2 Command Deck</h1>
+            <p className="text-sm text-slate-600 dark:text-slate-300 opacity-75">Monitor progress, refine rituals, and track your momentum.</p>
           </div>
           <div className="flex items-center gap-3">
-            <nav className="flex gap-2 rounded-full bg-slate-100 p-1 dark:bg-slate-800/60">
+            <nav className="glass-card flex gap-1 rounded-full p-1 flex-wrap justify-end">
               {navLinks.map((link) => (
                 <NavLink
                   key={link.to}
                   to={link.to}
                   className={({ isActive }) =>
-                    `rounded-full px-4 py-2 text-sm font-medium transition ${
+                    `rounded-full px-4 py-2 text-sm font-medium transition-all ${
                       isActive || location.pathname === link.to
-                        ? 'bg-cyan-500 text-white shadow'
-                        : 'text-slate-600 hover:text-cyan-500 dark:text-slate-300 dark:hover:text-cyan-300'
+                        ? 'bg-cyan-500 text-white shadow-lg'
+                        : 'text-slate-600 hover:text-cyan-400 dark:text-slate-300 dark:hover:text-cyan-300'
                     }`
                   }
                 >
