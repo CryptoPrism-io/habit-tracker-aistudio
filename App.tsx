@@ -17,6 +17,7 @@ import CompletionHeatmap from './components/CompletionHeatmap';
 import TimeScatterPlot from './components/TimeScatterPlot';
 import StreakTimeline from './components/StreakTimeline';
 import HabitSunburst from './components/HabitSunburst';
+import LevelProgressRing from './components/LevelProgressRing';
 import { getISODateString, formatTimeOfDay } from './utils/date';
 
 const ACCESS_CODE = '1111';
@@ -69,10 +70,10 @@ const HabitIconBadge: React.FC<{ habit: Habit }> = ({ habit }) => {
 };
 
 const StatCard: React.FC<{ label: string; value: string; subLabel?: string }> = ({ label, value, subLabel }) => (
-  <div className="rounded-xl border border-slate-200/70 bg-white/70 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
-    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{label}</p>
+  <div className="rounded-xl border border-slate-300 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:shadow-lg">
+    <p className="text-sm font-medium text-slate-600 dark:text-slate-300">{label}</p>
     <p className="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">{value}</p>
-    {subLabel ? <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">{subLabel}</p> : null}
+    {subLabel ? <p className="mt-1 text-xs text-slate-500 dark:text-slate-300">{subLabel}</p> : null}
   </div>
 );
 
@@ -106,7 +107,7 @@ const AccessGate: React.FC<{ onSubmit: (code: string) => boolean }> = ({ onSubmi
 
   return (
     <div className="grid min-h-screen place-items-center bg-slate-950 text-slate-100">
-      <form onSubmit={handleSubmit} className="w-full max-w-md space-y-4 rounded-2xl border border-slate-800 bg-slate-900/60 p-8 shadow-xl">
+      <form onSubmit={handleSubmit} className="w-full max-w-md space-y-4 rounded-2xl border border-slate-800 bg-slate-900 p-8 shadow-xl">
         <div>
           <h1 className="text-2xl font-semibold">Discipline Forge</h1>
           <p className="mt-2 text-sm text-slate-400">Phase 2 portal locked. Provide your access code to continue calibration.</p>
@@ -198,13 +199,13 @@ const AnalyticsPage: React.FC<AnalyticsPageProps> = ({ stats, logs, history, hab
       </section>
 
       <section className="grid gap-6 lg:grid-cols-[2fr,1fr]">
-        <div className="rounded-xl border border-slate-200/70 bg-white/70 p-4 dark:border-slate-800 dark:bg-slate-900/60">
+        <div className="rounded-xl border border-slate-300 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/60">
           <h3 className="text-base font-semibold text-slate-700 dark:text-slate-200">Completion Trend</h3>
           <div className="mt-4 h-72">
             <HabitHistoryChart data={stats.chartData} />
           </div>
         </div>
-        <div className="rounded-xl border border-slate-200/70 bg-white/70 p-4 dark:border-slate-800 dark:bg-slate-900/60">
+        <div className="rounded-xl border border-slate-300 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/60">
           <h3 className="text-base font-semibold text-slate-700 dark:text-slate-200">Highlights</h3>
           <ul className="mt-4 space-y-3 text-sm text-slate-600 dark:text-slate-300">
             <li>
@@ -224,40 +225,40 @@ const AnalyticsPage: React.FC<AnalyticsPageProps> = ({ stats, logs, history, hab
 
       <section>
         <h2 className="text-lg font-semibold text-slate-700 dark:text-slate-200">Category Performance</h2>
-        <div className="mt-4 rounded-xl border border-slate-200/70 bg-white/70 p-4 dark:border-slate-800 dark:bg-slate-900/60">
+        <div className="mt-4 rounded-xl border border-slate-300 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/60">
           <CategoryRadialChart habits={habits} logs={logs} />
         </div>
       </section>
 
       <section>
         <h2 className="text-lg font-semibold text-slate-700 dark:text-slate-200">Completion Timeline</h2>
-        <div className="mt-4 rounded-xl border border-slate-200/70 bg-white/70 p-4 dark:border-slate-800 dark:bg-slate-900/60">
+        <div className="mt-4 rounded-xl border border-slate-300 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/60">
           <StreakTimeline logs={logs} />
         </div>
       </section>
 
       <section>
         <h2 className="text-lg font-semibold text-slate-700 dark:text-slate-200">Habit Hierarchy</h2>
-        <div className="mt-4 rounded-xl border border-slate-200/70 bg-white/70 p-4 dark:border-slate-800 dark:bg-slate-900/60">
+        <div className="mt-4 rounded-xl border border-slate-300 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/60">
           <HabitSunburst habits={habits} logs={logs} />
         </div>
       </section>
 
       <section>
         <h2 className="text-lg font-semibold text-slate-700 dark:text-slate-200">Completion Patterns</h2>
-        <div className="mt-4 rounded-xl border border-slate-200/70 bg-white/70 p-4 dark:border-slate-800 dark:bg-slate-900/60">
+        <div className="mt-4 rounded-xl border border-slate-300 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/60">
           <TimeScatterPlot habits={habits} history={history} />
         </div>
       </section>
 
       <section>
         <h3 className="text-base font-semibold text-slate-700 dark:text-slate-200">Habit Breakdown</h3>
-        <div className="mt-4 overflow-hidden rounded-xl border border-slate-200/70 bg-white/70 dark:border-slate-800 dark:bg-slate-900/60">
+        <div className="mt-4 overflow-hidden rounded-xl border border-slate-300 bg-white dark:border-slate-800 dark:bg-slate-900/60">
           <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
             <thead className="bg-slate-100/70 dark:bg-slate-800/60">
               <tr>
-                <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Habit</th>
-                <th className="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Completions</th>
+                <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">Habit</th>
+                <th className="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">Completions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
@@ -267,13 +268,20 @@ const AnalyticsPage: React.FC<AnalyticsPageProps> = ({ stats, logs, history, hab
                   <td className="px-4 py-2 text-right text-sm font-semibold text-slate-700 dark:text-slate-200">{entry.count}</td>
                 </tr>
               ))}
-              {habitBreakdown.length === 0 ? (
+              {habitBreakdown.length === 0 && (
                 <tr>
-                  <td colSpan={2} className="px-4 py-6 text-center text-sm text-slate-500 dark:text-slate-400">
-                    Complete habits to build analytics history.
+                  <td colSpan={2} className="px-4 py-6">
+                    <div className="text-center">
+                      <p className="text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">
+                        No completion data yet
+                      </p>
+                      <p className="text-xs text-slate-500 dark:text-slate-300">
+                        Complete your habits on the Dashboard to see analytics.
+                      </p>
+                    </div>
                   </td>
                 </tr>
-              ) : null}
+              )}
             </tbody>
           </table>
         </div>
@@ -285,9 +293,11 @@ interface HabitManagerPageProps {
   habits: Habit[];
   onAddHabit: (draft: HabitDraft) => void;
   onUpdateHabit: (habitId: string, updates: Partial<HabitDraft>) => void;
+  onDeleteHabit?: (habitId: string) => void;
 }
 
-const HabitManagerPage: React.FC<HabitManagerPageProps> = ({ habits, onAddHabit, onUpdateHabit }) => {
+const HabitManagerPage: React.FC<HabitManagerPageProps> = ({ habits, onAddHabit, onUpdateHabit, onDeleteHabit }) => {
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [formState, setFormState] = useState({
     name: '',
     category: HABIT_CATEGORIES[0],
@@ -444,11 +454,11 @@ const HabitManagerPage: React.FC<HabitManagerPageProps> = ({ habits, onAddHabit,
 
   return (
     <div className="space-y-10">
-      <section>
+      <section id="create-form">
         <h2 className="text-lg font-semibold text-slate-700 dark:text-slate-200">Create a New Habit</h2>
-        <form onSubmit={handleCreate} className="mt-4 grid gap-4 rounded-xl border border-slate-200/70 bg-white/70 p-6 dark:border-slate-800 dark:bg-slate-900/60 sm:grid-cols-2">
+        <form onSubmit={handleCreate} className="mt-4 grid gap-4 rounded-xl border border-slate-300 bg-white p-6 dark:border-slate-800 dark:bg-slate-900/60 sm:grid-cols-2">
           <label className="flex flex-col gap-2 text-sm">
-            <span className="font-medium text-slate-600 dark:text-slate-400">Name</span>
+            <span className="font-medium text-slate-600 dark:text-slate-300">Name</span>
             <input
               type="text"
               value={formState.name}
@@ -459,7 +469,7 @@ const HabitManagerPage: React.FC<HabitManagerPageProps> = ({ habits, onAddHabit,
           </label>
 
           <label className="flex flex-col gap-2 text-sm">
-            <span className="font-medium text-slate-600 dark:text-slate-400">Category</span>
+            <span className="font-medium text-slate-600 dark:text-slate-300">Category</span>
             <select
               value={formState.category}
               onChange={(event) => setFormState((prev) => ({ ...prev, category: event.target.value }))}
@@ -474,7 +484,7 @@ const HabitManagerPage: React.FC<HabitManagerPageProps> = ({ habits, onAddHabit,
           </label>
 
           <label className="flex flex-col gap-2 text-sm">
-            <span className="font-medium text-slate-600 dark:text-slate-400">Points</span>
+            <span className="font-medium text-slate-600 dark:text-slate-300">Points</span>
             <select
               value={formState.points}
               onChange={(event) => setFormState((prev) => ({ ...prev, points: event.target.value }))}
@@ -489,7 +499,7 @@ const HabitManagerPage: React.FC<HabitManagerPageProps> = ({ habits, onAddHabit,
           </label>
 
           <label className="flex flex-col gap-2 text-sm">
-            <span className="font-medium text-slate-600 dark:text-slate-400">Icon</span>
+            <span className="font-medium text-slate-600 dark:text-slate-300">Icon</span>
             <select
               value={formState.iconKey}
               onChange={(event) => setFormState((prev) => ({ ...prev, iconKey: event.target.value }))}
@@ -504,7 +514,7 @@ const HabitManagerPage: React.FC<HabitManagerPageProps> = ({ habits, onAddHabit,
           </label>
 
           <label className="flex flex-col gap-2 text-sm">
-            <span className="font-medium text-slate-600 dark:text-slate-400">Duration</span>
+            <span className="font-medium text-slate-600 dark:text-slate-300">Duration</span>
             <select
               value={formState.durationMinutes}
               onChange={(event) =>
@@ -522,7 +532,7 @@ const HabitManagerPage: React.FC<HabitManagerPageProps> = ({ habits, onAddHabit,
           </label>
 
           <label className="flex flex-col gap-2 text-sm">
-            <span className="font-medium text-slate-600 dark:text-slate-400">Streak Multiplier</span>
+            <span className="font-medium text-slate-600 dark:text-slate-300">Streak Multiplier</span>
             <select
               value={formState.streakMultiplier}
               onChange={(event) =>
@@ -539,7 +549,7 @@ const HabitManagerPage: React.FC<HabitManagerPageProps> = ({ habits, onAddHabit,
           </label>
 
           <label className="sm:col-span-2 flex flex-col gap-2 text-sm">
-            <span className="font-medium text-slate-600 dark:text-slate-400">Description</span>
+            <span className="font-medium text-slate-600 dark:text-slate-300">Description</span>
             <textarea
               value={formState.description}
               onChange={(event) => setFormState((prev) => ({ ...prev, description: event.target.value }))}
@@ -550,7 +560,7 @@ const HabitManagerPage: React.FC<HabitManagerPageProps> = ({ habits, onAddHabit,
           </label>
 
           <label className="sm:col-span-2 flex flex-col gap-2 text-sm">
-            <span className="font-medium text-slate-600 dark:text-slate-400">Tags (comma separated)</span>
+            <span className="font-medium text-slate-600 dark:text-slate-300">Tags (comma separated)</span>
             <input
               type="text"
               value={formState.tags}
@@ -567,7 +577,7 @@ const HabitManagerPage: React.FC<HabitManagerPageProps> = ({ habits, onAddHabit,
                     setFormState((prev) => ({ ...prev, tags: mergeTagValue(prev.tags, tag) }))
                   }
                   aria-label={`Add tag: ${tag}`}
-                  className="rounded-full border border-slate-200 px-2 py-1 font-medium text-slate-500 transition hover:border-cyan-400 hover:text-cyan-600 dark:border-slate-700 dark:text-slate-400 dark:hover:border-cyan-500 dark:hover:text-cyan-300"
+                  className="rounded-full border border-slate-200 px-2 py-1 font-medium text-slate-500 transition hover:border-cyan-400 hover:text-cyan-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-cyan-500 dark:hover:text-cyan-300"
                 >
                   #{tag}
                 </button>
@@ -578,7 +588,7 @@ const HabitManagerPage: React.FC<HabitManagerPageProps> = ({ habits, onAddHabit,
           {error ? <p role="alert" className="sm:col-span-2 text-sm text-rose-500">{error}</p> : null}
 
           <div className="sm:col-span-2 flex justify-end gap-3">
-            <button type="button" onClick={resetForm} className="rounded-lg bg-transparent px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
+            <button type="button" onClick={resetForm} className="rounded-lg bg-transparent px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-300 dark:hover:text-slate-200">
               Reset
             </button>
             <button type="submit" className="rounded-lg bg-cyan-500 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-600">
@@ -592,11 +602,11 @@ const HabitManagerPage: React.FC<HabitManagerPageProps> = ({ habits, onAddHabit,
         <h2 className="text-lg font-semibold text-slate-700 dark:text-slate-200">Active Habits</h2>
         <div className="mt-4 space-y-4">
           {habits.map((habit) => (
-            <div key={habit.id} className="rounded-xl border border-slate-200/70 bg-white/70 p-4 dark:border-slate-800 dark:bg-slate-900/60">
+            <div key={habit.id} className="rounded-xl border border-slate-300 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/60">
               {editingHabitId === habit.id ? (
                 <form onSubmit={handleEditSave} className="grid gap-4 sm:grid-cols-2">
                   <label className="flex flex-col gap-1 text-sm">
-                    <span className="font-medium text-slate-600 dark:text-slate-400">Name</span>
+                    <span className="font-medium text-slate-600 dark:text-slate-300">Name</span>
                     <input
                       type="text"
                       value={editingState.name}
@@ -606,7 +616,7 @@ const HabitManagerPage: React.FC<HabitManagerPageProps> = ({ habits, onAddHabit,
                   </label>
 
                   <label className="flex flex-col gap-1 text-sm">
-                    <span className="font-medium text-slate-600 dark:text-slate-400">Category</span>
+                    <span className="font-medium text-slate-600 dark:text-slate-300">Category</span>
                     <select
                       value={editingState.category}
                       onChange={(event) => setEditingState((prev) => ({ ...prev, category: event.target.value }))}
@@ -621,7 +631,7 @@ const HabitManagerPage: React.FC<HabitManagerPageProps> = ({ habits, onAddHabit,
                   </label>
 
                   <label className="flex flex-col gap-1 text-sm">
-                    <span className="font-medium text-slate-600 dark:text-slate-400">Points</span>
+                    <span className="font-medium text-slate-600 dark:text-slate-300">Points</span>
                     <select
                       value={editingState.points}
                       onChange={(event) => setEditingState((prev) => ({ ...prev, points: event.target.value }))}
@@ -636,7 +646,7 @@ const HabitManagerPage: React.FC<HabitManagerPageProps> = ({ habits, onAddHabit,
                   </label>
 
                   <label className="flex flex-col gap-1 text-sm">
-                    <span className="font-medium text-slate-600 dark:text-slate-400">Icon</span>
+                    <span className="font-medium text-slate-600 dark:text-slate-300">Icon</span>
                     <select
                       value={editingState.iconKey}
                       onChange={(event) => setEditingState((prev) => ({ ...prev, iconKey: event.target.value }))}
@@ -651,7 +661,7 @@ const HabitManagerPage: React.FC<HabitManagerPageProps> = ({ habits, onAddHabit,
                   </label>
 
                   <label className="flex flex-col gap-1 text-sm">
-                    <span className="font-medium text-slate-600 dark:text-slate-400">Duration</span>
+                    <span className="font-medium text-slate-600 dark:text-slate-300">Duration</span>
                     <select
                       value={editingState.durationMinutes}
                       onChange={(event) =>
@@ -669,7 +679,7 @@ const HabitManagerPage: React.FC<HabitManagerPageProps> = ({ habits, onAddHabit,
                   </label>
 
                   <label className="flex flex-col gap-1 text-sm">
-                    <span className="font-medium text-slate-600 dark:text-slate-400">Streak Multiplier</span>
+                    <span className="font-medium text-slate-600 dark:text-slate-300">Streak Multiplier</span>
                     <select
                       value={editingState.streakMultiplier}
                       onChange={(event) =>
@@ -686,7 +696,7 @@ const HabitManagerPage: React.FC<HabitManagerPageProps> = ({ habits, onAddHabit,
                   </label>
 
                   <label className="sm:col-span-2 flex flex-col gap-1 text-sm">
-                    <span className="font-medium text-slate-600 dark:text-slate-400">Description</span>
+                    <span className="font-medium text-slate-600 dark:text-slate-300">Description</span>
                     <textarea
                       value={editingState.description}
                       onChange={(event) => setEditingState((prev) => ({ ...prev, description: event.target.value }))}
@@ -696,7 +706,7 @@ const HabitManagerPage: React.FC<HabitManagerPageProps> = ({ habits, onAddHabit,
                   </label>
 
                   <label className="sm:col-span-2 flex flex-col gap-1 text-sm">
-                    <span className="font-medium text-slate-600 dark:text-slate-400">Tags</span>
+                    <span className="font-medium text-slate-600 dark:text-slate-300">Tags</span>
                     <input
                       type="text"
                       value={editingState.tags}
@@ -712,7 +722,7 @@ const HabitManagerPage: React.FC<HabitManagerPageProps> = ({ habits, onAddHabit,
                             setEditingState((prev) => ({ ...prev, tags: mergeTagValue(prev.tags, tag) }))
                           }
                           aria-label={`Add tag: ${tag}`}
-                          className="rounded-full border border-slate-200 px-2 py-1 font-medium text-slate-500 transition hover:border-cyan-400 hover:text-cyan-600 dark:border-slate-700 dark:text-slate-400 dark:hover:border-cyan-500 dark:hover:text-cyan-300"
+                          className="rounded-full border border-slate-200 px-2 py-1 font-medium text-slate-500 transition hover:border-cyan-400 hover:text-cyan-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-cyan-500 dark:hover:text-cyan-300"
                         >
                           #{tag}
                         </button>
@@ -721,7 +731,7 @@ const HabitManagerPage: React.FC<HabitManagerPageProps> = ({ habits, onAddHabit,
                   </label>
 
                   <div className="sm:col-span-2 flex justify-end gap-3">
-                    <button type="button" onClick={() => setEditingHabitId(null)} className="rounded-lg bg-transparent px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
+                    <button type="button" onClick={() => setEditingHabitId(null)} className="rounded-lg bg-transparent px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-300 dark:hover:text-slate-200">
                       Cancel
                     </button>
                     <button type="submit" className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600">
@@ -733,15 +743,15 @@ const HabitManagerPage: React.FC<HabitManagerPageProps> = ({ habits, onAddHabit,
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="text-base font-semibold text-slate-800 dark:text-slate-100">{habit.name}</p>
-                    <div className="mt-1 flex flex-wrap gap-3 text-xs text-slate-500 dark:text-slate-400">
+                    <div className="mt-1 flex flex-wrap gap-3 text-xs text-slate-500 dark:text-slate-300">
                       <span className="rounded-full bg-cyan-500/10 px-2 py-1 font-medium text-cyan-600 dark:text-cyan-300">{formatCategory(habit.category)}</span>
                       <span>{habit.points} pts</span>
                       {habit.durationMinutes ? <span>{habit.durationMinutes} min</span> : null}
                       {habit.streakMultiplier ? <span>{habit.streakMultiplier}x</span> : null}
                     </div>
-                    {habit.description ? <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{habit.description}</p> : null}
+                    {habit.description ? <p className="mt-2 text-sm text-slate-500 dark:text-slate-300">{habit.description}</p> : null}
                     {habit.tags?.length ? (
-                      <div className="mt-2 flex flex-wrap gap-2 text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                      <div className="mt-2 flex flex-wrap gap-2 text-xs uppercase tracking-wide text-slate-400 dark:text-slate-400">
                         {habit.tags.map((tag) => (
                           <span key={tag} className="rounded border border-slate-200/60 px-2 py-0.5 dark:border-slate-700">
                             {tag}
@@ -758,17 +768,65 @@ const HabitManagerPage: React.FC<HabitManagerPageProps> = ({ habits, onAddHabit,
                     >
                       Edit
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => setDeleteConfirm(habit.id)}
+                      className="rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 hover:border-red-400 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:border-red-700 dark:hover:bg-red-950"
+                    >
+                      Delete
+                    </button>
                   </div>
                 </div>
               )}
             </div>
           ))}
           {habits.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-slate-300 p-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
-              No habits yet - create your first ritual above.
+            <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/50 p-10 text-center dark:border-slate-700 dark:bg-slate-900/30">
+              <p className="text-lg font-semibold text-slate-600 dark:text-slate-300 mb-2">No habits yet</p>
+              <p className="text-sm text-slate-500 dark:text-slate-300 mb-4">
+                Use the form above to create your first habit and start building your discipline.
+              </p>
+              <a
+                href="#create-form"
+                className="inline-block rounded-lg bg-cyan-500 px-6 py-2 text-sm font-semibold text-white hover:bg-cyan-600 transition"
+              >
+                Scroll to Form
+              </a>
             </div>
           ) : null}
         </div>
+
+        {deleteConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <div className="rounded-2xl bg-white p-6 shadow-xl dark:bg-slate-900 w-full max-w-md mx-4">
+              <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4">
+                Delete habit?
+              </h3>
+              <p className="text-sm text-slate-600 dark:text-slate-300 mb-6">
+                Are you sure you want to delete "{habits.find(h => h.id === deleteConfirm)?.name}"? This action cannot be undone.
+              </p>
+              <div className="flex gap-3 justify-end">
+                <button
+                  type="button"
+                  onClick={() => setDeleteConfirm(null)}
+                  className="rounded-lg bg-transparent px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onDeleteHabit?.(deleteConfirm);
+                    setDeleteConfirm(null);
+                  }}
+                  className="rounded-lg bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-600"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </section>
     </div>
   );
@@ -826,18 +884,27 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ stats, habits, logs, hist
     <div className="space-y-8">
       <section>
         <h2 className="text-lg font-semibold text-slate-700 dark:text-slate-200">Progress Overview</h2>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard label="Guild Level" value={`Lv ${stats.level}`} subLabel={`${stats.pointsForCurrentLevel}/${stats.pointsToNextLevel} XP`} />
-          <StatCard label="Total XP" value={`${stats.totalPoints.toLocaleString()} pts`} />
-          <StatCard label="Current Streak" value={`${stats.streak} days`} subLabel={`+${Math.round((stats.streakBonusMultiplier - 1) * 100)}% bonus`} />
-          <StatCard label="Today's Forge" value={`${stats.todayPoints} pts`} />
+        <div className="mt-4 grid gap-6 lg:grid-cols-[1fr,2fr]">
+          <div className="rounded-xl border border-slate-300 bg-white p-6 dark:border-slate-800 dark:bg-slate-900/60 flex items-center justify-center">
+            <LevelProgressRing
+              level={stats.level}
+              pointsForCurrentLevel={stats.pointsForCurrentLevel}
+              pointsToNextLevel={stats.pointsToNextLevel}
+            />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <StatCard label="Total XP" value={`${stats.totalPoints.toLocaleString()} pts`} />
+            <StatCard label="Current Streak" value={`${stats.streak} days`} subLabel={`+${Math.round((stats.streakBonusMultiplier - 1) * 100)}% bonus`} />
+            <StatCard label="Today's Forge" value={`${stats.todayPoints} pts`} />
+            <StatCard label="Completion Rate" value={`${todayCompleted.size}/${habits.length}`} subLabel="habits today" />
+          </div>
         </div>
       </section>
 
       <section>
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-slate-700 dark:text-slate-200">Today's Habits</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+          <p className="text-sm text-slate-500 dark:text-slate-300">
             {todayCompleted.size}/{habits.length} completed
           </p>
         </div>
@@ -848,14 +915,14 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ stats, habits, logs, hist
             return (
               <div
                 key={habit.id}
-                className="flex items-center justify-between rounded-xl border border-slate-200/70 bg-white/70 p-4 transition hover:border-cyan-400 hover:shadow-md dark:border-slate-800 dark:bg-slate-900/60"
+                className="flex items-center justify-between rounded-xl border border-slate-300 bg-white p-4 transition hover:border-cyan-400 hover:shadow-md dark:border-slate-800 dark:bg-slate-900/60"
               >
                 <div className="flex items-center gap-4 flex-1">
                   <HabitIconBadge habit={habit} />
                   <div className="flex-1">
                     <p className="text-base font-semibold text-slate-800 dark:text-slate-100">{habit.name}</p>
                     <p className="text-xs uppercase tracking-wide text-cyan-500">{formatCategory(habit.category)}</p>
-                    <div className="mt-1 flex flex-wrap gap-2 text-xs text-slate-500 dark:text-slate-400">
+                    <div className="mt-1 flex flex-wrap gap-2 text-xs text-slate-500 dark:text-slate-300">
                       <span>{habit.points} pts</span>
                       {habit.durationMinutes ? <span>{habit.durationMinutes} min</span> : null}
                       {habit.streakMultiplier && habit.streakMultiplier !== 1 ? (
@@ -866,7 +933,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ stats, habits, logs, hist
                       ) : null}
                     </div>
                     {habit.description ? (
-                      <p className="mt-2 max-w-xl text-sm text-slate-500 dark:text-slate-400">{habit.description}</p>
+                      <p className="mt-2 max-w-xl text-sm text-slate-500 dark:text-slate-300">{habit.description}</p>
                     ) : null}
                     {isCompleted && completionInfo?.note ? (
                       <p className="mt-2 text-sm text-slate-600 dark:text-slate-300 italic">Note: {completionInfo.note}</p>
@@ -889,8 +956,17 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ stats, habits, logs, hist
             );
           })}
           {sortedHabits.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-slate-300 p-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
-              No active habits yet. Head to the Habit Manager to create your first ritual.
+            <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/50 p-10 text-center dark:border-slate-700 dark:bg-slate-900/30">
+              <p className="text-lg font-semibold text-slate-600 dark:text-slate-300 mb-2">Ready to build your first habit?</p>
+              <p className="text-sm text-slate-500 dark:text-slate-300 mb-4">
+                Create habits and track them daily to build your discipline streak.
+              </p>
+              <NavLink
+                to="/habits"
+                className="inline-block rounded-lg bg-cyan-500 px-6 py-2 text-sm font-semibold text-white hover:bg-cyan-600 transition"
+              >
+                Create Your First Habit
+              </NavLink>
             </div>
           ) : null}
         </div>
@@ -913,7 +989,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ stats, habits, logs, hist
                 <button
                   type="button"
                   onClick={() => setNoteBeingAdded(null)}
-                  className="rounded-lg bg-transparent px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
+                  className="rounded-lg bg-transparent px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 dark:text-slate-300 dark:hover:text-slate-200"
                 >
                   Skip
                 </button>
@@ -932,14 +1008,14 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ stats, habits, logs, hist
 
       <section>
         <h2 className="text-lg font-semibold text-slate-700 dark:text-slate-200">Completion Calendar</h2>
-        <div className="mt-4 rounded-xl border border-slate-200/70 bg-white/70 p-4 dark:border-slate-800 dark:bg-slate-900/60">
+        <div className="mt-4 rounded-xl border border-slate-300 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/60">
           <CompletionHeatmap logs={logs} />
         </div>
       </section>
 
       <section>
         <h2 className="text-lg font-semibold text-slate-700 dark:text-slate-200">Weekly Momentum</h2>
-        <div className="mt-4 h-72 rounded-xl border border-slate-200/70 bg-white/70 p-4 dark:border-slate-800 dark:bg-slate-900/60">
+        <div className="mt-4 h-72 rounded-xl border border-slate-300 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/60">
           <HabitHistoryChart data={stats.chartData} />
         </div>
       </section>
@@ -962,14 +1038,14 @@ const AppShell: React.FC<{ theme: string; onToggleTheme: () => void; children: R
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 transition dark:bg-slate-950 dark:text-slate-100">
       <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-10 sm:px-8">
-        <header className="flex flex-col gap-4 rounded-2xl border border-slate-200/70 bg-white/70 p-6 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-slate-900/60 sm:flex-row sm:items-center sm:justify-between">
+        <header className="flex flex-col gap-4 rounded-2xl border border-slate-300 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/60 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm uppercase tracking-[0.3em] text-cyan-500">Discipline Forge</p>
             <h1 className="text-2xl font-bold">Phase 2 Command Deck</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Monitor progress, refine rituals, and track your momentum.</p>
+            <p className="text-sm text-slate-600 dark:text-slate-300">Monitor progress, refine rituals, and track your momentum.</p>
           </div>
           <div className="flex items-center gap-3">
-            <nav className="flex gap-2 rounded-full bg-slate-100/70 p-1 dark:bg-slate-800/60">
+            <nav className="flex gap-2 rounded-full bg-slate-100 p-1 dark:bg-slate-800/60">
               {navLinks.map((link) => (
                 <NavLink
                   key={link.to}
@@ -996,7 +1072,7 @@ const AppShell: React.FC<{ theme: string; onToggleTheme: () => void; children: R
 };
 
 const App: React.FC = () => {
-  const { habits, logs, stats, history, toggleHabit, addHabit, updateHabit } = useDisciplineForge();
+  const { habits, logs, stats, history, toggleHabit, addHabit, updateHabit, setHabitActive } = useDisciplineForge();
   const [theme, toggleTheme] = useTheme();
   const [hasAccess, setHasAccess] = useState(false);
 
@@ -1030,7 +1106,7 @@ const App: React.FC = () => {
       <Routes>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<DashboardPage stats={stats} habits={habits} logs={logs} history={history} onToggleHabit={toggleHabit} />} />
-        <Route path="/habits" element={<HabitManagerPage habits={habits} onAddHabit={addHabit} onUpdateHabit={updateHabit} />} />
+        <Route path="/habits" element={<HabitManagerPage habits={habits} onAddHabit={addHabit} onUpdateHabit={updateHabit} onDeleteHabit={(id) => setHabitActive(id, false)} />} />
         <Route path="/analytics" element={<AnalyticsPage stats={stats} logs={logs} history={history} habits={habits} />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>

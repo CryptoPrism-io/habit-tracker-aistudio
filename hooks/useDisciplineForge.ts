@@ -149,10 +149,22 @@ export const useDisciplineForge = () => {
       date.setDate(date.getDate() - i);
       const dateStr = getISODateString(date);
       const logForDay = logs.find((log) => log.date === dateStr);
+
+      let dayPoints = 0;
+      if (logForDay) {
+        logForDay.completedHabitIds.forEach((habitId) => {
+          const habit = habits.find((h) => h.id === habitId);
+          if (habit) {
+            dayPoints += habit.points * (habit.streakMultiplier ?? 1);
+          }
+        });
+      }
+
       chartData.push({
         name: date.toLocaleDateString('en-US', { weekday: 'short' }),
         date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         completed: logForDay ? logForDay.completedHabitIds.length : 0,
+        points: dayPoints,
       });
     }
 
