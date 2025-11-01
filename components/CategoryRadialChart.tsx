@@ -1,12 +1,16 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { RadarChart, Radar, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Legend, Tooltip, PolarGrid } from 'recharts';
-import type { Habit, DailyLog } from '../types';
+import type { Habit, DailyLog, DailyRecord } from '../types';
 import { HABIT_CATEGORIES } from '../types';
+import { getISODateString } from '../utils/date';
 
 interface CategoryRadialChartProps {
   habits: Habit[];
   logs: DailyLog[];
+  history?: Record<string, DailyRecord>;
 }
+
+type TimePeriod = 'daily' | 'weekly' | 'monthly';
 
 const CATEGORY_COLORS: Record<string, { hex: string; light: string; dark: string }> = {
   sadhana: { hex: '#06b6d4', light: 'rgba(6, 182, 212, 0.8)', dark: 'rgba(6, 182, 212, 0.6)' },
@@ -18,9 +22,34 @@ const CATEGORY_COLORS: Record<string, { hex: string; light: string; dark: string
   workout_supplements: { hex: '#ef4444', light: 'rgba(239, 68, 68, 0.8)', dark: 'rgba(239, 68, 68, 0.6)' },
 };
 
-const CategoryRadialChart: React.FC<CategoryRadialChartProps> = ({ habits, logs }) => {
+const CategoryRadialChart: React.FC<CategoryRadialChartProps> = ({ habits, logs, history = {} }) => {
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>('monthly');
 
-  const { radarData, categoryInfo } = useMemo(() => {
+  // Helper function to get date range
+  const getDateRange = (period: TimePeriod): { start: Date; end: Date } => {
+    const today = new Date();
+    const start = new Date();
+
+    if (period === 'daily') {
+      start.setDate(today.getDate());
+    } else if (period === 'weekly') {
+      start.setDate(today.getDate() - 6);
+    } else {
+      start.setDate(today.getDate() - 29);
+    }
+
+    return { start, end: today };
+  };
+
+  // Helper function to get day of week name
+  const getDayName = (date: Date): string => {
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    return days[date.getDay()];
+  };
+
+  // Helper function to extract data by time period
+  const extractDataByPeriod = (period: TimePeriod) => {
+    const { start, end } = getDateRange(period);
     const categoryStats = new Map<string, { completed: number; total: number; color: string }>();
 
     // Initialize all categories
@@ -29,56 +58,174 @@ const CategoryRadialChart: React.FC<CategoryRadialChartProps> = ({ habits, logs 
       categoryStats.set(cat, { completed: 0, total: 0, color: colorData.hex });
     });
 
-    // Count habits by category
-    habits.forEach((habit) => {
-      const cat = habit.category as string;
-      const stats = categoryStats.get(cat);
-      if (stats) {
-        stats.total += 1;
-      }
-    });
+    if (period === 'daily') {
+      // For daily: show today's data (0 or 1 per category)
+      const today = getISODateString(new Date());
+      const todayRecord = history[today];
+      const habitsInCategories = new Map<string, number>();
 
-    // Count completions by category
-    logs.forEach((log) => {
-      log.completedHabitIds.forEach((habitId) => {
-        const habit = habits.find((h) => h.id === habitId);
-        if (habit) {
-          const cat = habit.category as string;
-          const stats = categoryStats.get(cat);
-          if (stats) {
-            stats.completed += 1;
-          }
+      // Count habits in each category
+      habits.forEach((habit) => {
+        const cat = habit.category as string;
+        const stats = categoryStats.get(cat);
+        if (stats) {
+          stats.total += 1;
         }
       });
-    });
+
+      // Count completions
+      if (todayRecord) {
+        todayRecord.entries.forEach((entry) => {
+          const habit = habits.find((h) => h.id === entry.habitId);
+          if (habit) {
+            const cat = habit.category as string;
+            const stats = categoryStats.get(cat);
+            if (stats && !habitsInCategories.has(cat)) {
+              stats.completed = 1;
+              habitsInCategories.set(cat, 1);
+            }
+          }
+        });
+      }
+    } else if (period === 'weekly') {
+      // For weekly: show 7 days of data (0-7 completions per day per category)
+      const dailyData = new Map<string, { day: string; completions: number }[]>();
+
+      HABIT_CATEGORIES.forEach((cat) => {
+        dailyData.set(cat, []);
+      });
+
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const dateStr = getISODateString(date);
+        const dayName = getDayName(date);
+        const record = history[dateStr];
+
+        HABIT_CATEGORIES.forEach((cat) => {
+          let count = 0;
+          if (record) {
+            record.entries.forEach((entry) => {
+              const habit = habits.find((h) => h.id === entry.habitId);
+              if (habit && habit.category === cat) {
+                count++;
+              }
+            });
+          }
+          dailyData.get(cat)?.push({ day: dayName, completions: count });
+        });
+      }
+
+      // For weekly, we'll structure it differently (see below in radarChartData)
+      return { radarData: dailyData, categoryStats, mode: 'weekly' };
+    } else {
+      // For monthly: show aggregated category performance (0-100% scale)
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(endDate.getDate() - 29);
+
+      // Count habits in each category
+      habits.forEach((habit) => {
+        const cat = habit.category as string;
+        const stats = categoryStats.get(cat);
+        if (stats) {
+          stats.total += 1;
+        }
+      });
+
+      // Count completions in date range
+      for (const dateStr in history) {
+        const [year, month, day] = dateStr.split('-').map(Number);
+        const recordDate = new Date(year, month - 1, day);
+
+        if (recordDate >= startDate && recordDate <= endDate) {
+          const record = history[dateStr];
+          record.entries.forEach((entry) => {
+            const habit = habits.find((h) => h.id === entry.habitId);
+            if (habit) {
+              const cat = habit.category as string;
+              const stats = categoryStats.get(cat);
+              if (stats) {
+                stats.completed += 1;
+              }
+            }
+          });
+        }
+      }
+    }
+
+    return { categoryStats, mode: period };
+  };
+
+  const { radarData, categoryInfo, maxValue } = useMemo(() => {
+    const { categoryStats, mode } = extractDataByPeriod(timePeriod);
 
     // Build radar chart data and category info
     const activeCategories = Array.from(categoryStats.entries())
       .filter(([, stats]) => stats.total > 0)
       .sort(([a], [b]) => a.localeCompare(b));
 
-    const radarChartData = activeCategories.map(([category, stats]) => {
-      const rate = stats.total > 0 ? (stats.completed / stats.total) * 100 : 0;
-      const categoryLabel = category.replace(/_/g, ' ').toUpperCase();
-      return {
-        category: categoryLabel,
-        rate: Math.round(rate),
-      };
-    });
+    let radarChartData: any[];
+    let maxVal = 100;
+
+    if (timePeriod === 'daily') {
+      // Daily: 0-1 scale
+      radarChartData = activeCategories.map(([category, stats]) => {
+        const categoryLabel = category.replace(/_/g, ' ').toUpperCase();
+        return {
+          category: categoryLabel,
+          rate: stats.completed,
+        };
+      });
+      maxVal = 1;
+    } else if (timePeriod === 'weekly') {
+      // Weekly: 0-7 scale (7 days)
+      radarChartData = activeCategories.map(([category]) => {
+        const categoryLabel = category.replace(/_/g, ' ').toUpperCase();
+        const categoryEntry: any = { category: categoryLabel };
+        // Will be populated by daily data
+        return categoryEntry;
+      });
+      maxVal = 7;
+    } else {
+      // Monthly: 0-100% scale
+      radarChartData = activeCategories.map(([category, stats]) => {
+        const rate = stats.total > 0 ? (stats.completed / stats.total) * 100 : 0;
+        const categoryLabel = category.replace(/_/g, ' ').toUpperCase();
+        return {
+          category: categoryLabel,
+          rate: Math.round(rate),
+        };
+      });
+      maxVal = 100;
+    }
 
     const categoryMetadata = activeCategories.map(([category, stats]) => {
-      const rate = stats.total > 0 ? (stats.completed / stats.total) * 100 : 0;
+      let rate = 0;
+      let displayRate = 0;
+
+      if (timePeriod === 'daily') {
+        rate = stats.completed * 100; // 0 or 100
+        displayRate = stats.completed * 100;
+      } else if (timePeriod === 'weekly') {
+        displayRate = stats.completed; // Show total for week
+        rate = stats.total > 0 ? (stats.completed / (stats.total * 7)) * 100 : 0;
+      } else {
+        rate = stats.total > 0 ? (stats.completed / stats.total) * 100 : 0;
+        displayRate = rate;
+      }
+
       return {
         label: category.replace(/_/g, ' ').toUpperCase(),
-        rate: Math.round(rate),
+        rate: Math.round(displayRate),
         completed: stats.completed,
         total: stats.total,
         color: stats.color,
       };
     });
 
-    return { radarData: radarChartData, categoryInfo: categoryMetadata };
-  }, [habits, logs]);
+    return { radarData: radarChartData, categoryInfo: categoryMetadata, maxValue: maxVal };
+  }, [habits, logs, history, timePeriod]);
 
   const data = categoryInfo;
 
@@ -117,15 +264,40 @@ const CategoryRadialChart: React.FC<CategoryRadialChartProps> = ({ habits, logs 
     return null;
   };
 
+  const getPeriodLabel = () => {
+    if (timePeriod === 'daily') return 'Today';
+    if (timePeriod === 'weekly') return 'This Week';
+    return 'This Month';
+  };
+
   return (
-    <div className="relative w-full h-[450px]">
+    <div className="relative w-full h-[500px]">
       {/* Enhanced glassmorphic background layer */}
       <div className="absolute inset-0 rounded-2xl border border-slate-200/20 dark:border-slate-700/20 backdrop-blur-xs bg-gradient-to-br from-white/40 to-slate-50/40 dark:from-slate-900/20 dark:to-slate-800/20 pointer-events-none" />
 
-      {/* Chart title and subtitle */}
-      <div className="relative z-20 px-6 pt-6">
-        <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Habit Category Performance</h3>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Completion rates across all categories</p>
+      {/* Chart header with title and time period selector */}
+      <div className="relative z-20 px-6 pt-6 flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Habit Category Performance</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Showing {getPeriodLabel()}</p>
+        </div>
+
+        {/* Time Period Selector */}
+        <div className="flex gap-2 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm rounded-lg p-1 border border-slate-200/30 dark:border-slate-700/30">
+          {(['daily', 'weekly', 'monthly'] as const).map((period) => (
+            <button
+              key={period}
+              onClick={() => setTimePeriod(period)}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                timePeriod === period
+                  ? 'bg-cyan-500 text-white shadow-lg'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+              }`}
+            >
+              {period.charAt(0).toUpperCase() + period.slice(1)}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Chart container */}
@@ -147,7 +319,7 @@ const CategoryRadialChart: React.FC<CategoryRadialChartProps> = ({ habits, logs 
             />
             <PolarRadiusAxis
               angle={90}
-              domain={[0, 100]}
+              domain={[0, maxValue]}
               tick={{
                 fill: '#94a3b8',
                 fontSize: 10,
@@ -191,10 +363,22 @@ const CategoryRadialChart: React.FC<CategoryRadialChartProps> = ({ habits, logs 
             <span className="font-semibold text-slate-900 dark:text-slate-100">{data.length}</span> <span className="opacity-75">categories</span>
           </div>
           <div className="text-slate-600 dark:text-slate-400">
-            <span className="font-semibold text-cyan-500">{Math.round(data.reduce((sum, d) => sum + d.rate, 0) / data.length)}%</span> <span className="opacity-75">avg rate</span>
+            {timePeriod === 'daily' ? (
+              <>
+                <span className="font-semibold text-cyan-500">{data.filter((d) => d.rate > 0).length}</span> <span className="opacity-75">started</span>
+              </>
+            ) : timePeriod === 'weekly' ? (
+              <>
+                <span className="font-semibold text-cyan-500">{data.reduce((sum, d) => sum + d.rate, 0)}</span> <span className="opacity-75">total completions</span>
+              </>
+            ) : (
+              <>
+                <span className="font-semibold text-cyan-500">{Math.round(data.reduce((sum, d) => sum + d.rate, 0) / data.length)}</span> <span className="opacity-75">% avg</span>
+              </>
+            )}
           </div>
           <div className="text-slate-600 dark:text-slate-400">
-            <span className="font-semibold text-slate-900 dark:text-slate-100">{data.reduce((sum, d) => sum + d.completed, 0)}</span> <span className="opacity-75">completions</span>
+            <span className="font-semibold text-slate-900 dark:text-slate-100">{data.reduce((sum, d) => sum + d.completed, 0)}</span> <span className="opacity-75">{timePeriod === 'daily' ? 'completed today' : 'completions'}</span>
           </div>
         </div>
       </div>

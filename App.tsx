@@ -223,7 +223,7 @@ const AnalyticsPage: React.FC<AnalyticsPageProps> = ({ stats, logs, history, hab
       </section>
 
       <CollapsibleCard title="Category Performance">
-        <CategoryRadialChart habits={habits} logs={logs} />
+        <CategoryRadialChart habits={habits} logs={logs} history={history} />
       </CollapsibleCard>
 
       <CollapsibleCard title="Completion Timeline" defaultOpen={false}>
