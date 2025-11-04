@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Redirecting...</title>
+    <script>
+      (function () {
+        var REDIRECT_KEY = 'gh_pages_redirect';
+        try {
+          var path = window.location.pathname + window.location.search + window.location.hash;
+          sessionStorage.setItem(REDIRECT_KEY, path);
+        } catch (error) {
+          console.warn('Unable to persist GitHub Pages redirect path:', error);
+        }
+
+        var segments = window.location.pathname.split('/').filter(Boolean);
+        var repoBase = segments.length ? '/' + segments[0] + '/' : '/';
+        window.location.replace(repoBase);
+      })();
+    </script>
+  </head>
+  <body></body>
+</html>
