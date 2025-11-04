@@ -11,6 +11,7 @@ import {
 } from './types';
 import { useDisciplineForge } from './hooks/useDisciplineForge';
 import { useTheme } from './hooks/useTheme';
+import notificationService from './services/notificationService';
 import HabitHistoryChart from './components/HabitHistoryChart';
 import CategoryRadialChart from './components/CategoryRadialChart';
 import CompletionHeatmap from './components/CompletionHeatmap';
@@ -19,7 +20,10 @@ import StreakTimeline from './components/StreakTimeline';
 import HabitSunburst from './components/HabitSunburst';
 import LevelProgressRing from './components/LevelProgressRing';
 import CollapsibleCard from './components/CollapsibleCard';
+import TimePicker from './components/TimePicker';
+import DaySelector from './components/DaySelector';
 import { getISODateString, formatTimeOfDay } from './utils/date';
+import { formatTime, getHabitStatus, getStatusColor, sortHabitsByTime, getHabitsDueNow, isHabitActiveToday, formatActiveDays } from './utils/timeHelpers';
 
 const ACCESS_CODE = '1111';
 const ACCESS_STORAGE_KEY = 'discipline-forge-access-granted';
@@ -71,11 +75,17 @@ const HabitIconBadge: React.FC<{ habit: Habit }> = ({ habit }) => {
 };
 
 const StatCard: React.FC<{ label: string; value: string; subLabel?: string }> = ({ label, value, subLabel }) => (
-  <div className="glass-card p-5 rounded-2xl">
+  <div className="glass-card rounded-2xl p-4 sm:p-5">
     <p className="text-sm font-medium text-slate-600 dark:text-slate-300 opacity-75">{label}</p>
     <p className="mt-2 text-3xl font-bold text-slate-900 dark:text-white glow-text-cyan">{value}</p>
     {subLabel ? <p className="mt-1 text-xs text-slate-500 dark:text-slate-300 opacity-70">{subLabel}</p> : null}
   </div>
+);
+
+const PenIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg viewBox="0 0 20 20" fill="currentColor" focusable="false" aria-hidden="true" {...props}>
+    <path d="M13.586 2.586a2 2 0 0 1 2.828 0l1 1a2 2 0 0 1 0 2.828l-1.793 1.793-3.828-3.828L13.586 2.586zm-2.793 3.5 3.828 3.828-6.5 6.5a2 2 0 0 1-.878.505l-3.182.85a.5.5 0 0 1-.607-.607l.85-3.182a2 2 0 0 1 .505-.878l6.484-6.516z" />
+  </svg>
 );
 
 const ThemeToggleButton: React.FC<{ theme: string; onToggle: () => void }> = ({ theme, onToggle }) => (
@@ -85,7 +95,7 @@ const ThemeToggleButton: React.FC<{ theme: string; onToggle: () => void }> = ({ 
     className="glass-button flex h-10 w-10 items-center justify-center rounded-full text-xs font-semibold transition-all hover:border-cyan-400 hover:text-cyan-400 dark:hover:text-cyan-300"
     aria-label="Toggle theme"
   >
-    {theme === 'dark' ? '☀️' : '🌙'}
+    {theme === 'dark' ? 'Sun' : 'Moon'}
   </button>
 );
 
@@ -243,8 +253,8 @@ const AnalyticsPage: React.FC<AnalyticsPageProps> = ({ stats, logs, history, hab
       </CollapsibleCard>
 
       <CollapsibleCard title="Habit Breakdown">
-        <div className="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700">
-          <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
+        <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700">
+          <table className="min-w-[480px] divide-y divide-slate-200 dark:divide-slate-800">
             <thead className="bg-slate-100/70 dark:bg-slate-800/60">
               <tr>
                 <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">Habit</th>
@@ -295,6 +305,9 @@ const HabitManagerPage: React.FC<HabitManagerPageProps> = ({ habits, onAddHabit,
     iconKey: HABIT_ICON_KEYS[0],
     durationMinutes: '',
     streakMultiplier: HABIT_STREAK_MULTIPLIERS[0].toString(),
+    scheduledHour: 6,
+    scheduledMinute: 0,
+    activeDays: [0, 1, 2, 3, 4, 5, 6],
     description: '',
     tags: '',
   });
@@ -307,6 +320,9 @@ const HabitManagerPage: React.FC<HabitManagerPageProps> = ({ habits, onAddHabit,
     iconKey: HABIT_ICON_KEYS[0],
     durationMinutes: '',
     streakMultiplier: HABIT_STREAK_MULTIPLIERS[0].toString(),
+    scheduledHour: 6,
+    scheduledMinute: 0,
+    activeDays: [0, 1, 2, 3, 4, 5, 6],
     description: '',
     tags: '',
   });
@@ -330,6 +346,9 @@ const HabitManagerPage: React.FC<HabitManagerPageProps> = ({ habits, onAddHabit,
       iconKey: HABIT_ICON_KEYS[0],
       durationMinutes: '',
       streakMultiplier: HABIT_STREAK_MULTIPLIERS[0].toString(),
+      scheduledHour: 6,
+      scheduledMinute: 0,
+      activeDays: [0, 1, 2, 3, 4, 5, 6],
       description: '',
       tags: '',
     });
@@ -372,6 +391,9 @@ const HabitManagerPage: React.FC<HabitManagerPageProps> = ({ habits, onAddHabit,
       iconKey: formState.iconKey,
       durationMinutes: Number.isNaN(duration) ? undefined : duration,
       streakMultiplier,
+      scheduledHour: formState.scheduledHour,
+      scheduledMinute: formState.scheduledMinute,
+      activeDays: formState.activeDays,
       description: formState.description || undefined,
       tags: formState.tags
         .split(',')
@@ -394,6 +416,9 @@ const HabitManagerPage: React.FC<HabitManagerPageProps> = ({ habits, onAddHabit,
       streakMultiplier: habit.streakMultiplier
         ? habit.streakMultiplier.toString()
         : HABIT_STREAK_MULTIPLIERS[0].toString(),
+      scheduledHour: habit.scheduledHour ?? 6,
+      scheduledMinute: habit.scheduledMinute ?? 0,
+      activeDays: habit.activeDays ?? [0, 1, 2, 3, 4, 5, 6],
       description: habit.description ?? '',
       tags: habit.tags?.join(', ') ?? '',
     });
@@ -433,6 +458,9 @@ const HabitManagerPage: React.FC<HabitManagerPageProps> = ({ habits, onAddHabit,
       iconKey: editingState.iconKey,
       durationMinutes: Number.isNaN(duration) ? undefined : duration,
       streakMultiplier,
+      scheduledHour: editingState.scheduledHour,
+      scheduledMinute: editingState.scheduledMinute,
+      activeDays: editingState.activeDays,
       description: editingState.description || undefined,
       tags: editingState.tags
         .split(',')
@@ -538,6 +566,27 @@ const HabitManagerPage: React.FC<HabitManagerPageProps> = ({ habits, onAddHabit,
             </select>
           </label>
 
+          <div className="sm:col-span-2">
+            <TimePicker
+              hour={formState.scheduledHour}
+              minute={formState.scheduledMinute}
+              onChange={(hour, minute) =>
+                setFormState((prev) => ({ ...prev, scheduledHour: hour, scheduledMinute: minute }))
+              }
+              label="Scheduled Time"
+            />
+          </div>
+
+          <div className="sm:col-span-2">
+            <DaySelector
+              activeDays={formState.activeDays}
+              onChange={(days) =>
+                setFormState((prev) => ({ ...prev, activeDays: days }))
+              }
+              label="Active Days"
+            />
+          </div>
+
           <label className="sm:col-span-2 flex flex-col gap-2 text-sm">
             <span className="font-medium text-slate-600 dark:text-slate-300">Description</span>
             <textarea
@@ -594,7 +643,7 @@ const HabitManagerPage: React.FC<HabitManagerPageProps> = ({ habits, onAddHabit,
           {habits.map((habit) => (
             <div key={habit.id} className="glass-card p-5 rounded-2xl">
               {editingHabitId === habit.id ? (
-                <form onSubmit={handleEditSave} className="grid gap-4 sm:grid-cols-2">
+                <form onSubmit={handleEditSave} className="grid gap-3 sm:gap-4 sm:grid-cols-2">
                   <label className="flex flex-col gap-1 text-sm">
                     <span className="font-medium text-slate-600 dark:text-slate-300">Name</span>
                     <input
@@ -685,6 +734,27 @@ const HabitManagerPage: React.FC<HabitManagerPageProps> = ({ habits, onAddHabit,
                     </select>
                   </label>
 
+                  <div className="sm:col-span-2">
+                    <TimePicker
+                      hour={editingState.scheduledHour}
+                      minute={editingState.scheduledMinute}
+                      onChange={(hour, minute) =>
+                        setEditingState((prev) => ({ ...prev, scheduledHour: hour, scheduledMinute: minute }))
+                      }
+                      label="Scheduled Time"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <DaySelector
+                      activeDays={editingState.activeDays}
+                      onChange={(days) =>
+                        setEditingState((prev) => ({ ...prev, activeDays: days }))
+                      }
+                      label="Active Days"
+                    />
+                  </div>
+
                   <label className="sm:col-span-2 flex flex-col gap-1 text-sm">
                     <span className="font-medium text-slate-600 dark:text-slate-300">Description</span>
                     <textarea
@@ -732,9 +802,21 @@ const HabitManagerPage: React.FC<HabitManagerPageProps> = ({ habits, onAddHabit,
               ) : (
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <p className="text-base font-semibold text-slate-800 dark:text-slate-100">{habit.name}</p>
-                    <div className="mt-1 flex flex-wrap gap-3 text-xs text-slate-500 dark:text-slate-300">
+                    <div className="flex items-center gap-3">
+                      <p className="text-base font-semibold text-slate-800 dark:text-slate-100">{habit.name}</p>
+                      {habit.scheduledHour !== undefined && habit.scheduledMinute !== undefined ? (
+                        <span style={{ color: getStatusColor(getHabitStatus(habit.scheduledHour, habit.scheduledMinute)) }} className="text-sm font-semibold px-2 py-1 rounded-full bg-opacity-20">
+                          {formatTime(habit.scheduledHour, habit.scheduledMinute)}
+                        </span>
+                      ) : null}
+                    </div>
+                    <div className="mt-1 flex flex-wrap gap-2 text-xs text-slate-500 dark:text-slate-300">
                       <span className="rounded-full bg-cyan-500/10 px-2 py-1 font-medium text-cyan-600 dark:text-cyan-300">{formatCategory(habit.category)}</span>
+                      {habit.activeDays && habit.activeDays.length < 7 ? (
+                        <span className="px-2 py-1 rounded-full bg-slate-700/50 text-slate-300 border border-slate-600/50">
+                          {formatActiveDays(habit.activeDays)}
+                        </span>
+                      ) : null}
                       <span>{habit.points} pts</span>
                       {habit.durationMinutes ? <span>{habit.durationMinutes} min</span> : null}
                       {habit.streakMultiplier ? <span>{habit.streakMultiplier}x</span> : null}
@@ -831,7 +913,8 @@ interface DashboardPageProps {
 }
 
 const DashboardPage: React.FC<DashboardPageProps> = ({ stats, habits, logs, history, onToggleHabit }) => {
-  const [noteBeingAdded, setNoteBeingAdded] = useState<{ habitId: string; note: string } | null>(null);
+  const [noteComposer, setNoteComposer] = useState<{ habitId: string; note: string } | null>(null);
+  const [timeFilter, setTimeFilter] = useState<'all' | 'now' | 'upcoming' | 'overdue'>('all');
   const today = getISODateString(new Date());
   const todayCompleted = useMemo(() => {
     const log = logs.find((entry) => entry.date === today);
@@ -850,39 +933,83 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ stats, habits, logs, hist
     }
     return map;
   }, [todayRecord]);
-  const sortedHabits = useMemo(() => [...habits].sort((a, b) => a.name.localeCompare(b.name)), [habits]);
+  const sortedHabits = useMemo(() => {
+    let filtered = [...habits];
 
-  const handleCompleteWithNote = useCallback((habitId: string) => {
-    const isCompleted = todayCompleted.has(habitId);
-    if (isCompleted) {
-      // Just toggle off without asking for a note
-      onToggleHabit(habitId, today);
-    } else {
-      // Show note input
-      setNoteBeingAdded({ habitId, note: '' });
+    // Filter by active days - only show habits active today
+    filtered = filtered.filter((habit) => isHabitActiveToday(habit.activeDays));
+
+    if (timeFilter !== 'all') {
+      filtered = filtered.filter((habit) => {
+        const hour = habit.scheduledHour ?? 0;
+        const minute = habit.scheduledMinute ?? 0;
+        const status = getHabitStatus(hour, minute);
+        return status === timeFilter;
+      });
     }
-  }, [todayCompleted, today, onToggleHabit]);
+
+    return filtered.sort((a, b) => {
+      // Sort by time, with priority for "now" habits
+      const aHour = a.scheduledHour ?? 0;
+      const aMinute = a.scheduledMinute ?? 0;
+      const bHour = b.scheduledHour ?? 0;
+      const bMinute = b.scheduledMinute ?? 0;
+
+      const aTime = aHour * 60 + aMinute;
+      const bTime = bHour * 60 + bMinute;
+
+      return aTime - bTime;
+    });
+  }, [habits, timeFilter]);
+  const composerHabit = noteComposer ? habits.find((habit) => habit.id === noteComposer.habitId) : null;
+  const composerIsCompleted = noteComposer ? todayCompleted.has(noteComposer.habitId) : false;
+
+  const handleToggleHabit = useCallback(
+    (habitId: string) => {
+      onToggleHabit(habitId, today);
+      if (noteComposer?.habitId === habitId) {
+        setNoteComposer(null);
+      }
+    },
+    [noteComposer, onToggleHabit, today]
+  );
+
+  const handleOpenNote = useCallback(
+    (habitId: string) => {
+      const completion = completionTimeMap.get(habitId);
+      setNoteComposer({
+        habitId,
+        note: completion?.note ?? '',
+      });
+    },
+    [completionTimeMap]
+  );
 
   const handleConfirmNote = useCallback(() => {
-    if (noteBeingAdded) {
-      onToggleHabit(noteBeingAdded.habitId, today, noteBeingAdded.note);
-      setNoteBeingAdded(null);
+    if (!noteComposer) {
+      return;
     }
-  }, [noteBeingAdded, today, onToggleHabit]);
+    onToggleHabit(noteComposer.habitId, today, noteComposer.note);
+    setNoteComposer(null);
+  }, [noteComposer, today, onToggleHabit]);
+
+  const handleCloseNote = useCallback(() => {
+    setNoteComposer(null);
+  }, []);
 
   return (
     <div className="space-y-8">
       <section>
         <h2 className="text-lg font-semibold text-slate-700 dark:text-slate-200">Progress Overview</h2>
         <div className="mt-4 grid gap-6 lg:grid-cols-[1fr,2fr]">
-          <div className="glass-card p-6 rounded-2xl flex items-center justify-center">
+          <div className="glass-card rounded-2xl p-5 sm:p-6 flex items-center justify-center">
             <LevelProgressRing
               level={stats.level}
               pointsForCurrentLevel={stats.pointsForCurrentLevel}
               pointsToNextLevel={stats.pointsToNextLevel}
             />
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-3 sm:gap-4 sm:grid-cols-2">
             <StatCard label="Total XP" value={`${stats.totalPoints.toLocaleString()} pts`} />
             <StatCard label="Current Streak" value={`${stats.streak} days`} subLabel={`+${Math.round((stats.streakBonusMultiplier - 1) * 100)}% bonus`} />
             <StatCard label="Today's Forge" value={`${stats.todayPoints} pts`} />
@@ -892,11 +1019,67 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ stats, habits, logs, hist
       </section>
 
       <section>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-lg font-semibold text-slate-700 dark:text-slate-200">Today's Habits</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-300">
-            {todayCompleted.size}/{habits.length} completed
-          </p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+            <p className="text-sm text-slate-500 dark:text-slate-300">
+              {todayCompleted.size}/{habits.length} completed
+            </p>
+            <div className="flex gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setTimeFilter('all')}
+                className={`text-xs px-3 py-1 rounded-full font-medium transition ${
+                  timeFilter === 'all'
+                    ? 'bg-cyan-500 text-white'
+                    : 'bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                }`}
+              >
+                All
+              </button>
+              <button
+                type="button"
+                onClick={() => setTimeFilter('now')}
+                className={`text-xs px-3 py-1 rounded-full font-medium transition ${
+                  timeFilter === 'now'
+                    ? 'bg-yellow-500 text-white'
+                    : 'bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                }`}
+              >
+                Due Now
+              </button>
+              <button
+                type="button"
+                onClick={() => setTimeFilter('upcoming')}
+                className={`text-xs px-3 py-1 rounded-full font-medium transition ${
+                  timeFilter === 'upcoming'
+                    ? 'bg-green-500 text-white'
+                    : 'bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                }`}
+              >
+                Upcoming
+              </button>
+              <button
+                type="button"
+                onClick={() => setTimeFilter('overdue')}
+                className={`text-xs px-3 py-1 rounded-full font-medium transition ${
+                  timeFilter === 'overdue'
+                    ? 'bg-red-500 text-white'
+                    : 'bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                }`}
+              >
+                Overdue
+              </button>
+              <button
+                type="button"
+                onClick={() => notificationService.sendTestNotification()}
+                className="text-xs px-3 py-1 rounded-full font-medium transition bg-purple-500 text-white hover:bg-purple-600"
+                title="Send test notification to verify notifications are working"
+              >
+                🔔 Test
+              </button>
+            </div>
+          </div>
         </div>
         <div className="mt-4 space-y-3">
           {sortedHabits.map((habit) => {
@@ -905,14 +1088,34 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ stats, habits, logs, hist
             return (
               <div
                 key={habit.id}
-                className="glass-card flex items-center justify-between p-5 rounded-2xl group"
+                className="glass-card flex flex-col gap-4 rounded-2xl p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5"
               >
-                <div className="flex items-center gap-4 flex-1">
+                <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
                   <HabitIconBadge habit={habit} />
-                  <div className="flex-1">
-                    <p className="text-base font-semibold text-slate-800 dark:text-slate-100 opacity-90 group-hover:opacity-100">{habit.name}</p>
-                    <p className="text-xs uppercase tracking-wide text-cyan-400 opacity-75">{formatCategory(habit.category)}</p>
-                    <div className="mt-1 flex flex-wrap gap-2 text-xs text-slate-500 dark:text-slate-300 opacity-70">
+                  <div className="flex flex-1 flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                      <p className="text-base font-semibold text-slate-800 dark:text-slate-100 opacity-90">{habit.name}</p>
+                      {habit.scheduledHour !== undefined && habit.scheduledMinute !== undefined ? (
+                        <span
+                          style={{
+                            backgroundColor: `${getStatusColor(getHabitStatus(habit.scheduledHour, habit.scheduledMinute))}20`,
+                            color: getStatusColor(getHabitStatus(habit.scheduledHour, habit.scheduledMinute)),
+                          }}
+                          className="text-xs font-semibold px-2 py-1 rounded-full"
+                        >
+                          {formatTime(habit.scheduledHour, habit.scheduledMinute)}
+                        </span>
+                      ) : null}
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-xs uppercase tracking-wide text-cyan-400 opacity-75">{formatCategory(habit.category)}</p>
+                      {habit.activeDays && habit.activeDays.length < 7 ? (
+                        <span className="text-xs px-2 py-1 rounded-full bg-slate-700/50 text-slate-300 border border-slate-600/50">
+                          {formatActiveDays(habit.activeDays)}
+                        </span>
+                      ) : null}
+                    </div>
+                    <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-300 opacity-80">
                       <span>{habit.points} pts</span>
                       {habit.durationMinutes ? <span>{habit.durationMinutes} min</span> : null}
                       {habit.streakMultiplier && habit.streakMultiplier !== 1 ? (
@@ -923,25 +1126,38 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ stats, habits, logs, hist
                       ) : null}
                     </div>
                     {habit.description ? (
-                      <p className="mt-2 max-w-xl text-sm text-slate-500 dark:text-slate-300">{habit.description}</p>
+                      <p className="text-sm text-slate-500 dark:text-slate-300">{habit.description}</p>
                     ) : null}
                     {isCompleted && completionInfo?.note ? (
-                      <p className="mt-2 text-sm text-slate-600 dark:text-slate-300 italic">Note: {completionInfo.note}</p>
+                      <p className="text-sm text-slate-600 dark:text-slate-300 italic">Note: {completionInfo.note}</p>
                     ) : null}
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => handleCompleteWithNote(habit.id)}
-                  aria-label={isCompleted ? `Mark ${habit.name} as incomplete` : `Mark ${habit.name} as complete`}
-                  className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition flex items-center gap-2 ${
-                    isCompleted
-                      ? 'bg-emerald-500 text-white hover:bg-emerald-600'
-                      : 'bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'
-                  }`}
-                >
-                  {isCompleted ? '✓ Completed' : 'Mark Complete'}
-                </button>
+                <div className="flex items-center gap-2 self-stretch sm:self-auto">
+                  <button
+                    type="button"
+                    onClick={() => handleToggleHabit(habit.id)}
+                    aria-label={isCompleted ? `Mark ${habit.name} as incomplete` : `Confirm ${habit.name}`}
+                    className={`flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition sm:flex-none ${
+                      isCompleted
+                        ? 'bg-emerald-500 text-white hover:bg-emerald-600'
+                        : 'bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    {isCompleted ? 'Completed' : 'Confirm'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenNote(habit.id)}
+                    aria-label={isCompleted ? `Edit note for ${habit.name}` : `Add note for ${habit.name}`}
+                    className={`glass-button flex h-10 w-10 items-center justify-center rounded-full text-slate-500 transition hover:text-cyan-500 dark:text-slate-300 dark:hover:text-cyan-300 ${
+                      completionInfo?.note ? 'ring-1 ring-cyan-400/40' : ''
+                    }`}
+                    title={completionInfo?.note ? 'Edit note' : 'Add note'}
+                  >
+                    <PenIcon className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
             );
           })}
@@ -961,34 +1177,35 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ stats, habits, logs, hist
           ) : null}
         </div>
 
-        {noteBeingAdded ? (
+        {noteComposer ? (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-            <div className="rounded-2xl bg-white p-6 shadow-xl dark:bg-slate-900 w-full max-w-md mx-4">
+            <div className="mx-4 w-full max-w-md rounded-2xl bg-white p-6 shadow-xl dark:bg-slate-900">
               <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4">
-                Add a note for {habits.find(h => h.id === noteBeingAdded.habitId)?.name}
+                {composerIsCompleted ? 'Edit note' : 'Add a note before confirming'}
+                {composerHabit ? ` for ${composerHabit.name}` : ''}
               </h3>
               <textarea
-                value={noteBeingAdded.note}
-                onChange={(e) => setNoteBeingAdded({ ...noteBeingAdded, note: e.target.value })}
+                value={noteComposer.note}
+                onChange={(event) => setNoteComposer({ ...noteComposer, note: event.target.value })}
                 placeholder="How did it go? Any observations?"
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400 dark:border-slate-700 dark:bg-slate-950"
                 rows={3}
                 autoFocus
               />
-              <div className="mt-4 flex gap-3 justify-end">
+              <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end sm:gap-3">
                 <button
                   type="button"
-                  onClick={() => setNoteBeingAdded(null)}
-                  className="rounded-lg bg-transparent px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 dark:text-slate-300 dark:hover:text-slate-200"
+                  onClick={handleCloseNote}
+                  className="rounded-lg bg-transparent px-4 py-2 text-sm font-medium text-slate-600 transition hover:text-slate-800 dark:text-slate-300 dark:hover:text-slate-200"
                 >
-                  Skip
+                  Cancel
                 </button>
                 <button
                   type="button"
                   onClick={handleConfirmNote}
-                  className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600"
+                  className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-600"
                 >
-                  Confirm
+                  {composerIsCompleted ? 'Save note' : 'Save & complete'}
                 </button>
               </div>
             </div>
@@ -1028,20 +1245,22 @@ const AppShell: React.FC<{ theme: string; onToggleTheme: () => void; children: R
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 transition-colors duration-300 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 dark:text-slate-100">
       <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-10 sm:px-8">
-        <header className="glass-card-strong flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm uppercase tracking-[0.3em] text-cyan-400 font-semibold opacity-90">Discipline Forge</p>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Phase 2 Command Deck</h1>
-            <p className="text-sm text-slate-600 dark:text-slate-300 opacity-75">Monitor progress, refine rituals, and track your momentum.</p>
+        <header className="glass-card-strong flex flex-col gap-5 rounded-3xl p-6 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+          <div className="space-y-2">
+            <p className="text-xs uppercase tracking-[0.35em] text-cyan-400 font-semibold opacity-90">Discipline Forge</p>
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Phase 2 Command Deck</h1>
+              <p className="text-sm text-slate-600 dark:text-slate-300 opacity-80">Monitor progress, refine rituals, and track your momentum.</p>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <nav className="glass-card flex gap-1 rounded-full p-1 flex-wrap justify-end">
+          <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto sm:flex-nowrap sm:justify-end">
+            <nav className="glass-card flex w-full min-w-0 items-center gap-1 rounded-full p-1 sm:w-auto">
               {navLinks.map((link) => (
                 <NavLink
                   key={link.to}
                   to={link.to}
                   className={({ isActive }) =>
-                    `rounded-full px-4 py-2 text-sm font-medium transition-all ${
+                    `flex-1 rounded-full px-4 py-2 text-center text-sm font-medium transition-all sm:flex-none ${
                       isActive || location.pathname === link.to
                         ? 'bg-cyan-500 text-white shadow-lg'
                         : 'text-slate-600 hover:text-cyan-400 dark:text-slate-300 dark:hover:text-cyan-300'
@@ -1055,7 +1274,7 @@ const AppShell: React.FC<{ theme: string; onToggleTheme: () => void; children: R
             <ThemeToggleButton theme={theme} onToggle={onToggleTheme} />
           </div>
         </header>
-        <main className="pb-12">{children}</main>
+        <main className="pb-14 sm:pb-16">{children}</main>
       </div>
     </div>
   );
@@ -1075,6 +1294,33 @@ const App: React.FC = () => {
       setHasAccess(true);
     }
   }, []);
+
+  // Initialize notification service and monitor habits
+  useEffect(() => {
+    notificationService.init().then((enabled) => {
+      if (enabled) {
+        // Start monitoring habits when notifications are enabled
+        notificationService.startMonitoring(habits);
+
+        // Listen for habit completion from notifications
+        const handleHabitComplete = (event: Event) => {
+          const customEvent = event as CustomEvent;
+          const { habitId } = customEvent.detail;
+          if (habitId) {
+            toggleHabit(habitId);
+          }
+        };
+
+        window.addEventListener('habit:complete-from-notification', handleHabitComplete);
+
+        // Cleanup
+        return () => {
+          window.removeEventListener('habit:complete-from-notification', handleHabitComplete);
+          notificationService.stopMonitoring();
+        };
+      }
+    });
+  }, [habits, toggleHabit]);
 
   const handleAccessSubmit = useCallback((code: string) => {
     const valid = code === ACCESS_CODE;

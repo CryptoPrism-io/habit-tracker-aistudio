@@ -16,6 +16,9 @@ export const initialHabits: Habit[] = [
     durationMinutes: 45,
     tags: ['mindfulness', 'discipline'],
     streakMultiplier: 2,
+    scheduledHour: 5,
+    scheduledMinute: 30,
+    activeDays: [0, 1, 2, 3, 4, 5, 6], // Every day
     active: true,
     createdAt: createdTimestamp,
     updatedAt: createdTimestamp,
@@ -30,6 +33,9 @@ export const initialHabits: Habit[] = [
     durationMinutes: 15,
     tags: ['discipline', 'gratitude'],
     streakMultiplier: 1,
+    scheduledHour: 6,
+    scheduledMinute: 0,
+    activeDays: [1, 2, 3, 4, 5], // Weekdays only
     active: true,
     createdAt: createdTimestamp,
     updatedAt: createdTimestamp,
@@ -44,6 +50,9 @@ export const initialHabits: Habit[] = [
     durationMinutes: 15,
     tags: ['planning', 'recovery'],
     streakMultiplier: 1,
+    scheduledHour: 18,
+    scheduledMinute: 30,
+    activeDays: [0, 1, 2, 3, 4, 5, 6], // Every day
     active: true,
     createdAt: createdTimestamp,
     updatedAt: createdTimestamp,
@@ -58,6 +67,9 @@ export const initialHabits: Habit[] = [
     durationMinutes: 30,
     tags: ['sleep', 'reflection'],
     streakMultiplier: 1,
+    scheduledHour: 21,
+    scheduledMinute: 30,
+    activeDays: [0, 1, 2, 3, 4, 5, 6], // Every day
     active: true,
     createdAt: createdTimestamp,
     updatedAt: createdTimestamp,
@@ -72,6 +84,9 @@ export const initialHabits: Habit[] = [
     durationMinutes: 45,
     tags: ['learning', 'focus'],
     streakMultiplier: 2,
+    scheduledHour: 14,
+    scheduledMinute: 0,
+    activeDays: [1, 2, 3, 4, 5], // Weekdays only
     active: true,
     createdAt: createdTimestamp,
     updatedAt: createdTimestamp,
@@ -86,6 +101,9 @@ export const initialHabits: Habit[] = [
     durationMinutes: 60,
     tags: ['strength', 'nutrition'],
     streakMultiplier: 3,
+    scheduledHour: 17,
+    scheduledMinute: 0,
+    activeDays: [0, 2, 4, 6], // Monday, Wednesday, Friday, Sunday
     active: true,
     createdAt: createdTimestamp,
     updatedAt: createdTimestamp,

@@ -46,6 +46,9 @@ export interface Habit {
   durationMinutes?: number;
   streakMultiplier?: number;
   targetWindow?: TimeWindow;
+  scheduledHour?: number; // 0-23 (24-hour format)
+  scheduledMinute?: number; // 0-59
+  activeDays?: number[]; // 0=Sunday, 1=Monday, ... 6=Saturday. Default: all days
   description?: string;
   tags?: string[];
   active: boolean;
@@ -80,6 +83,9 @@ export interface HabitDraft {
   durationMinutes?: number;
   streakMultiplier?: number;
   targetWindow?: TimeWindow;
+  scheduledHour?: number; // 0-23 (24-hour format)
+  scheduledMinute?: number; // 0-59
+  activeDays?: number[]; // 0=Sunday, 1=Monday, ... 6=Saturday. Default: all days
   description?: string;
   tags?: string[];
 }

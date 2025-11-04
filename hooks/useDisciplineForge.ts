@@ -183,6 +183,17 @@ export const useDisciplineForge = () => {
   const toggleHabit = useCallback(
     (habitId: string, dateStr: string = getISODateString(new Date()), note?: string) => {
       setState((current) => {
+        // Find the habit to get its scheduled time
+        const habit = current.habits.find((h) => h.id === habitId);
+
+        // Create a timestamp using the habit's scheduled time
+        // If no scheduled time, use current time as fallback
+        let completedAtTime = new Date();
+        if (habit?.scheduledHour !== undefined && habit?.scheduledMinute !== undefined) {
+          completedAtTime.setHours(habit.scheduledHour, habit.scheduledMinute, 0, 0);
+        }
+        const completedAtISO = completedAtTime.toISOString();
+
         const history = { ...current.history };
         const record = history[dateStr]
           ? { ...history[dateStr], entries: [...history[dateStr].entries] }
@@ -190,11 +201,20 @@ export const useDisciplineForge = () => {
 
         const entryIndex = record.entries.findIndex((entry) => entry.habitId === habitId);
         if (entryIndex > -1) {
-          record.entries.splice(entryIndex, 1);
+          if (note !== undefined) {
+            const existingEntry = record.entries[entryIndex];
+            const trimmed = note.trim();
+            record.entries[entryIndex] = {
+              ...existingEntry,
+              note: trimmed.length > 0 ? trimmed : undefined,
+            };
+          } else {
+            record.entries.splice(entryIndex, 1);
+          }
         } else {
           record.entries.push({
             habitId,
-            completedAt: new Date().toISOString(),
+            completedAt: completedAtISO,
             note: note && note.trim() ? note.trim() : undefined,
           });
         }

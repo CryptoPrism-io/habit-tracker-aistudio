@@ -36,9 +36,9 @@ const TimeScatterPlot: React.FC<TimeScatterPlotProps> = ({ habits, history }) =>
 
       record.entries.forEach((entry) => {
         const habit = habits.find((h) => h.id === entry.habitId);
-        if (habit) {
-          const completedDate = new Date(entry.completedAt);
-          const hours = completedDate.getHours() + completedDate.getMinutes() / 60;
+        if (habit && habit.scheduledHour !== undefined && habit.scheduledMinute !== undefined) {
+          // Use the habit's scheduled time, not the actual completion time
+          const hours = habit.scheduledHour + habit.scheduledMinute / 60;
 
           points.push({
             time: hours,

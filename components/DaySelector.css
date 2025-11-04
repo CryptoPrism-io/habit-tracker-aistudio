@@ -1,0 +1,138 @@
+.day-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border-radius: 12px;
+  border: 1px solid rgba(100, 200, 255, 0.3);
+}
+
+.day-selector-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #a0d8ff;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.day-selector-buttons {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.day-button {
+  flex: 1;
+  padding: 10px 6px;
+  background: #0f0f0f;
+  border: 2px solid rgba(100, 200, 255, 0.3);
+  border-radius: 8px;
+  color: #888;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.day-button:hover {
+  border-color: rgba(100, 200, 255, 0.6);
+  color: #64c8ff;
+}
+
+.day-button.active {
+  background: #64c8ff;
+  border-color: #64c8ff;
+  color: #0f0f0f;
+  box-shadow: 0 0 15px rgba(100, 200, 255, 0.5);
+}
+
+.day-selector-quick-selects {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.quick-select-button {
+  padding: 8px 12px;
+  background: rgba(100, 200, 255, 0.15);
+  border: 1px solid rgba(100, 200, 255, 0.4);
+  border-radius: 6px;
+  color: #64c8ff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.quick-select-button:hover {
+  background: rgba(100, 200, 255, 0.3);
+  border-color: rgba(100, 200, 255, 0.7);
+}
+
+.quick-select-button.all-days:active,
+.quick-select-button.weekdays:active,
+.quick-select-button.weekends:active {
+  background: rgba(100, 200, 255, 0.5);
+  box-shadow: 0 0 10px rgba(100, 200, 255, 0.4);
+}
+
+.day-selector-display {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  background: rgba(100, 200, 255, 0.05);
+  border-radius: 6px;
+  border: 1px solid rgba(100, 200, 255, 0.15);
+}
+
+.days-active-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.days-active-text {
+  font-size: 13px;
+  color: #64c8ff;
+  font-weight: 500;
+}
+
+.day-selector-warning {
+  padding: 8px;
+  background: rgba(255, 107, 107, 0.1);
+  border: 1px solid rgba(255, 107, 107, 0.3);
+  border-radius: 6px;
+  color: #ff6b6b;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* Responsive design */
+@media (max-width: 640px) {
+  .day-selector-buttons {
+    gap: 4px;
+  }
+
+  .day-button {
+    padding: 8px 4px;
+    font-size: 11px;
+    min-height: 36px;
+  }
+
+  .quick-select-button {
+    font-size: 11px;
+    padding: 6px 10px;
+  }
+}

@@ -23,7 +23,7 @@ const CATEGORY_COLORS: Record<string, { hex: string; light: string; dark: string
 };
 
 const CategoryRadialChart: React.FC<CategoryRadialChartProps> = ({ habits, logs, history = {} }) => {
-  const [timePeriod, setTimePeriod] = useState<TimePeriod>('monthly');
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>('daily');
 
   // Helper function to get date range
   const getDateRange = (period: TimePeriod): { start: Date; end: Date } => {
